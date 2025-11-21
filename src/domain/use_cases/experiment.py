@@ -1,12 +1,9 @@
 import logging
-from typing import Callable
 import torch
 from torch.utils.data import Dataset
-from src.domain.entities.datasets import load_dataset
-from src.domain.entities.metrics import resnet_features_mean_square_centroid, frechet_inception_distance
-from src.domain.entities.models import diffusion_model
-
-from src.infrastructure.configuration import ExperimentConfiguration
+from src.domain.interfaces.dataset_loader import DatasetLoader
+from src.domain.interfaces.metrics import VariabilityMetric, SimilarityMetric
+from src.domain.interfaces.model import Model
 
 logger = logging.getLogger(__name__)
 
@@ -18,23 +15,29 @@ class Experiment:
     
     def __init__(
         self,
-        config: ExperimentConfiguration,
-        dataset_loader: Callable[[str, int | None, int], Dataset],
-        variability_metric: Callable[[Dataset], float],
-        similarity_metric: Callable[[Dataset, torch.Tensor], float],
-        model
+        datasets: list[str],
+        max_samples: int | None,
+        image_size: int,
+        dataset_loader: DatasetLoader,
+        variability_metric: VariabilityMetric,
+        similarity_metric: SimilarityMetric,
+        model: Model
     ):
         """
         Initialize the experiment with dependencies.
         
         Args:
-            config: Experiment configuration
-            dataset_loader: Function to load datasets
-            variability_metric: Function to compute variability
-            similarity_metric: Function to compute similarity
-            model: Model instance for training and generation
+            datasets: List of dataset names to process
+            max_samples: Maximum samples per dataset
+            image_size: Image size for datasets
+            dataset_loader: Dataset loader implementation
+            variability_metric: Variability metric implementation
+            similarity_metric: Similarity metric implementation
+            model: Model implementation
         """
-        self.config = config
+        self.datasets = datasets
+        self.max_samples = max_samples
+        self.image_size = image_size
         self.dataset_loader = dataset_loader
         self.variability_metric = variability_metric
         self.similarity_metric = similarity_metric
@@ -42,15 +45,15 @@ class Experiment:
         
     def load_dataset(self, dataset_name: str) -> Dataset:
         """Load a dataset using the injected loader."""
-        return self.dataset_loader(
+        return self.dataset_loader.load(
             dataset_name,
-            self.config.max_samples,
-            self.config.image_size
+            self.max_samples,
+            self.image_size
         )
     
     def compute_variability(self, dataset: Dataset) -> float:
         """Compute variability using the injected metric."""
-        return self.variability_metric(dataset)
+        return self.variability_metric.compute(dataset)
     
     def train_model(self, dataset: Dataset):
         """Train the model on the dataset."""
@@ -62,13 +65,13 @@ class Experiment:
     
     def compute_similarity(self, dataset: Dataset, generated: torch.Tensor) -> float:
         """Compute similarity between real and generated data."""
-        return self.similarity_metric(dataset, generated)
+        return self.similarity_metric.compute(dataset, generated)
     
     def run(self):
         """Run the complete experiment workflow."""
         logger.info("Starting MedMNIST Variability & Similarity Experiment")
         
-        for dataset_name in self.config.datasets:
+        for dataset_name in self.datasets:
             logger.info(f"Processing {dataset_name}...")
             
             try:
@@ -97,22 +100,3 @@ class Experiment:
         
         logger.info("Experiment completed.")
 
-
-def run_experiment(config: ExperimentConfiguration):
-    """
-    Runs the variability and similarity experiment based on the configuration.
-    
-    Args:
-        config: The experiment configuration.
-    """
-    # Create experiment with default dependencies
-    experiment = Experiment(
-        config=config,
-        dataset_loader=load_dataset,
-        variability_metric=resnet_features_mean_square_centroid,
-        similarity_metric=frechet_inception_distance,
-        model=diffusion_model
-    )
-    
-    # Run the experiment
-    experiment.run()
