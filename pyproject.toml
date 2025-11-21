@@ -1,0 +1,21 @@
+[project]
+name = "medmnist-variability"
+version = "0.1.0"
+description = "Comparing variability of MedMNIST datasets and similarity of generated images."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "medmnist>=3.0.0",
+    "scipy>=1.10.0",
+    "numpy>=1.24.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
