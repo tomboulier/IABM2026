@@ -15,10 +15,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+from config import load_config
+
 def main():
-    # Select a few datasets for the experiment
-    # Using a subset for demonstration as requested
-    datasets = ["ChestMNIST", "PathMNIST", "DermaMNIST"] 
+    # Load configuration
+    config = load_config()
+    
+    datasets = config["experiment"]["datasets"] 
 
     logger.info("Starting MedMNIST Variability & Similarity Experiment")
 
