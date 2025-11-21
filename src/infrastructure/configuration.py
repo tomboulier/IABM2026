@@ -7,6 +7,9 @@ class ExperimentConfiguration:
     datasets: list[str]
     max_samples: int | None = None
     image_size: int = 224
+    variability_metric: str = "resnet_msd"
+    similarity_metric: str = "fid"
+    model_type: str = "diffusion"
 
     @classmethod
     def load(cls, config_path: str) -> "ExperimentConfiguration":
