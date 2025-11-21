@@ -1,4 +1,4 @@
 [experiment]
-datasets = ["ChestMNIST"]
-max_samples = 100
-image_size = 28
+datasets = ["PathMNIST", "ChestMNIST", "DermaMNIST", "BloodMNIST"]
+max_samples = 10000
+image_size = 224
