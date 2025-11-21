@@ -21,7 +21,10 @@ def main():
     # Load configuration
     config = load_config()
     
-    datasets = config["experiment"]["datasets"] 
+    experiment_config = config["experiment"]
+    datasets = experiment_config["datasets"]
+    max_samples = experiment_config.get("max_samples")
+    image_size = experiment_config.get("image_size", 224)
 
     logger.info("Starting MedMNIST Variability & Similarity Experiment")
 
@@ -30,7 +33,7 @@ def main():
         
         try:
             # 1. Load Dataset
-            dataset = load_dataset(dataset_name)
+            dataset = load_dataset(dataset_name, max_samples=max_samples, image_size=image_size)
             logger.info(f"Loaded {dataset_name} with {len(dataset)} samples.")
 
             # 2. Compute Variability
