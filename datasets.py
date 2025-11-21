@@ -32,6 +32,7 @@ def load_dataset(name: str) -> Dataset:
         split='train',
         transform=data_transform,
         download=True,
+        as_rgb=True,
         size=224 # Resize to 224 for ResNet compatibility if needed, though MedMNIST is usually 28x28 or 224x224. 
                  # ResNet expects 224 usually. MedMNIST default is 28.
                  # Let's force 224 to be safe for the backbone.
