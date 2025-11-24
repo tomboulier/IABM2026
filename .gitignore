@@ -9,5 +9,6 @@ wheels/
 # Virtual environments
 .venv
 
-# VS Code directory
+# directories from integrated development environments (IDE)
+.idea/
 .vscode/*
