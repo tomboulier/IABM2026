@@ -225,10 +225,12 @@ class DiffusionModel(models.Model):
         
         # load weights if a path is provided
         self.load_weights_path = load_weights_path
+        # Tracker metric must be created in __init__ (or build) to avoid
+        # adding new variables after the model has been built.
+        self.noise_loss_tracker = metrics.Mean(name="n_loss")
 
     def compile(self, **kwargs):
         super().compile(**kwargs)
-        self.noise_loss_tracker = metrics.Mean(name="n_loss")
 
     def build(self, input_shape):
         if self.load_weights_path is not None:
