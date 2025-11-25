@@ -1,6 +1,6 @@
 from src.domain.interfaces.metrics import VariabilityMetric, SimilarityMetric
-from src.domain.entities.datasets import Dataset
-from src.domain.entities.models import Tensor
+from src.domain.entities.dataset import Dataset
+from src.domain.entities.tensor import Tensor
 import torch
 from torch.utils.data import Dataset as TorchDataset
 import torch.nn as nn

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from src.domain.entities.datasets import Dataset
-from src.domain.entities.models import Tensor
+from src.domain.entities.dataset import Dataset
+from src.domain.entities.tensor import Tensor
 
 
 class VariabilityMetric(ABC):

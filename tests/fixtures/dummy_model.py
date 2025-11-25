@@ -5,7 +5,8 @@ used to keep tests fast.
 """
 import numpy as np
 from src.domain.interfaces.model import Model
-from src.domain.types import Dataset, Tensor
+from src.domain.entities.dataset import Dataset
+from src.domain.entities.tensor import Tensor
 
 
 class DummyModel(Model):

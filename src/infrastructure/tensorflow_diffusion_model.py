@@ -350,7 +350,8 @@ class DiffusionModel(models.Model):
 # ==============================================================================
 
 from src.domain.interfaces.model import Model
-from src.domain.types import Dataset, Tensor
+from src.domain.entities.dataset import Dataset
+from src.domain.entities.tensor import Tensor
 import numpy as np
 
 

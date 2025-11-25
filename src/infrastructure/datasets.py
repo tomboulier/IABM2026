@@ -1,19 +1,11 @@
-"""Dataset loading and Dataset protocol definition."""
-from typing import Protocol, Any, runtime_checkable
+"""Dataset loading - concrete PyTorch/MedMNIST implementation.
+
+This belongs in infrastructure layer because it depends on PyTorch and MedMNIST.
+"""
 import torch
 import medmnist
 from medmnist import INFO
 from torchvision import transforms
-
-
-@runtime_checkable
-class Dataset(Protocol):
-    """Framework-independent dataset abstraction."""
-    
-    def __len__(self) -> int:
-        """Return the number of items in the dataset."""
-        ...
-    
     def __getitem__(self, idx: int) -> tuple[Any, Any]:
         """Get an item and its label from the dataset."""
         ...

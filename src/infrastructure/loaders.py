@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset as TorchDataset
 from src.domain.interfaces.dataset_loader import DatasetLoader
-from src.domain.entities.datasets import load_dataset, Dataset
+from src.infrastructure.datasets import load_dataset
+from src.domain.entities.dataset import Dataset
 
 
 class MedMNISTDatasetLoader(DatasetLoader):

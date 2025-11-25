@@ -1,6 +1,6 @@
 import logging
-from src.domain.entities.datasets import Dataset
-from src.domain.entities.models import Tensor
+from src.domain.entities.dataset import Dataset
+from src.domain.entities.tensor import Tensor
 from src.domain.interfaces.dataset_loader import DatasetLoader
 from src.domain.interfaces.metrics import VariabilityMetric, SimilarityMetric
 from src.domain.interfaces.model import Model

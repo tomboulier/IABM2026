@@ -1,6 +1,6 @@
 """Pytest configuration and shared fixtures."""
 import pytest
-from tests.fixtures.dummy_model import DummyModel
+from fixtures.dummy_model import DummyModel
 
 
 @pytest.fixture
