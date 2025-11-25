@@ -21,6 +21,7 @@ packages = ["."]
 
 [dependency-groups]
 dev = [
+    "mypy>=1.18.2",
     "pytest>=9.0.1",
     "tomli-w>=1.2.0",
 ]
