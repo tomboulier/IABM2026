@@ -1,7 +1,9 @@
 import math
+
 # from utils import display  # TODO: Create utils module or remove display functionality
 import tensorflow as tf
 from tensorflow import keras
+
 layers = keras.layers
 models = keras.models
 activations = keras.activations
@@ -232,15 +234,32 @@ class DiffusionModel(models.Model):
         if self.load_weights_path is not None:
             self.built = True
             self.load_weights(self.load_weights_path)
+        # Allow dynamic batch dimension to avoid requiring a fixed batch size
+        # from the TensorFlow dataset (which may use None as first dim).
+        if isinstance(input_shape, tuple) and input_shape[0] is not None:
+            # replace fixed batch with None for flexibility
+            input_shape = (None,) + tuple(input_shape[1:])
         super().build(input_shape)
 
-    def fit(self, dataset, epochs):
-        return super().fit(
-            dataset, 
-            epochs=epochs, 
-            callbacks=self.callbacks_list
-            )
-    
+    def fit(self, *args, **kwargs):
+        """
+        Wrapper around keras.Model.fit that ensures our callbacks are attached.
+        Accepts the full flexible signature (x=None, y=None, batch_size=None, epochs=1, ...)
+        so it won't raise signature-mismatch warnings in static analysis.
+        """
+        provided_callbacks = kwargs.get("callbacks")
+        if provided_callbacks is None:
+            kwargs["callbacks"] = list(self.callbacks_list)
+        else:
+            # Merge while avoiding mutating the original sequence
+            try:
+                kwargs["callbacks"] = list(provided_callbacks) + list(self.callbacks_list)
+            except TypeError:
+                # If provided_callbacks isn't iterable, replace it
+                kwargs["callbacks"] = list(self.callbacks_list)
+
+        return super().fit(*args, **kwargs)
+
     def train(self, dataset: tf.data.Dataset, epochs: int = 1):
         self.normalizer.adapt(dataset)
         self.compile(
@@ -273,11 +292,19 @@ class DiffusionModel(models.Model):
         return pred_noises, pred_images
 
     def reverse_diffusion(self, initial_noise, diffusion_steps):
-        num_images = initial_noise.shape[0]
-        step_size = 1.0 / diffusion_steps
+        # Handle edge case where diffusion_steps <= 0: return initial noise directly
+        if diffusion_steps <= 0:
+            return initial_noise
+
+        # Use tf.shape to handle symbolic shapes when running in graph mode
+        num_images = tf.shape(initial_noise)[0]
+        step_size = 1.0 / tf.cast(diffusion_steps, tf.float32)
         current_images = initial_noise
-        for step in range(diffusion_steps):
-            diffusion_times = tf.ones((num_images, 1, 1, 1)) - step * step_size
+        # initialize pred_images to silence static analyzers (will be overwritten)
+        pred_images = current_images
+        # Use python range for step loop — diffusion_steps is expected to be int
+        for step in range(int(diffusion_steps)):
+            diffusion_times = tf.ones((num_images, 1, 1, 1), dtype=tf.float32) - step * step_size
             noise_rates, signal_rates = self.diffusion_schedule(diffusion_times)
             pred_noises, pred_images = self.denoise(
                 current_images, noise_rates, signal_rates, training=False
@@ -311,11 +338,13 @@ class DiffusionModel(models.Model):
         return generated_images
 
     def train_step(self, images):
+        # Determine runtime batch size from the input tensor
+        batch_size = tf.shape(images)[0]
         images = self.normalizer(images, training=True)
-        noises = tf.random.normal(shape=(self.batch_size, self.image_size, self.image_size, self.num_channels))
+        noises = tf.random.normal(shape=(batch_size, self.image_size, self.image_size, self.num_channels))
 
         diffusion_times = tf.random.uniform(
-            shape=(self.batch_size, 1, 1, 1), minval=0.0, maxval=1.0
+            shape=(batch_size, 1, 1, 1), minval=0.0, maxval=1.0
         )
         noise_rates, signal_rates = self.diffusion_schedule(diffusion_times)
 
@@ -344,10 +373,11 @@ class DiffusionModel(models.Model):
         return {m.name: m.result() for m in self.metrics}
 
     def test_step(self, images):
+        batch_size = tf.shape(images)[0]
         images = self.normalizer(images, training=False)
-        noises = tf.random.normal(shape=(self.batch_size, self.image_size, self.image_size, self.num_channels))
+        noises = tf.random.normal(shape=(batch_size, self.image_size, self.image_size, self.num_channels))
         diffusion_times = tf.random.uniform(
-            shape=(self.batch_size, 1, 1, 1), minval=0.0, maxval=1.0
+            shape=(batch_size, 1, 1, 1), minval=0.0, maxval=1.0
         )
         noise_rates, signal_rates = self.diffusion_schedule(diffusion_times)
         noisy_images = signal_rates * images + noise_rates * noises
@@ -364,10 +394,11 @@ class DiffusionModel(models.Model):
 # ADAPTER LAYER: Implements domain Model interface
 # ==============================================================================
 
-from src.domain.interfaces.model import Model
+import numpy as np
+
 from src.domain.entities.dataset import Dataset
 from src.domain.entities.tensor import Tensor
-import numpy as np
+from src.domain.interfaces.model import Model
 
 
 class TensorFlowDiffusionModelAdapter(Model):
@@ -384,7 +415,7 @@ class TensorFlowDiffusionModelAdapter(Model):
     
     def __init__(self,
                  image_size: int = 28,
-                 num_channels: int = 1,
+                 num_channels: int = 3,  # Default to RGB
                  noise_embedding_size: int = 32,
                  batch_size: int = 32,
                  ema: float = 0.995,
@@ -423,16 +454,40 @@ class TensorFlowDiffusionModelAdapter(Model):
         # Convert domain Dataset to TensorFlow dataset
         # Assuming the dataset already has the right format (PyTorch or TensorFlow)
         # For now, we'll need to handle this conversion carefully
-        
+
         # Create a TensorFlow dataset from the protocol-based dataset
         def generator():
             for i in range(len(dataset)):
-                image, label = dataset[i]
-                # Convert to numpy if needed
-                if hasattr(image, 'numpy'):
-                    image = image.numpy()
+                item = dataset[i]
+                # Support dataset returning (image, label) or image alone
+                if isinstance(item, tuple) or isinstance(item, list):
+                    image = item[0]
+                else:
+                    image = item
+
+                # If it's a torch tensor, move to cpu and convert to numpy
+                # Avoid importing torch as a hard dependency at module import time
+                # by checking for common torch attributes.
+                if hasattr(image, "cpu") and hasattr(image, "numpy"):
+                    try:
+                        image = image.cpu().numpy()
+                    except Exception:
+                        # Fallback: try just .numpy()
+                        image = image.numpy()
+
+                # Ensure numpy array dtype float32
+                image = np.array(image, dtype=np.float32)
+
+                # Transpose from (C, H, W) to (H, W, C) if needed
+                if image.ndim == 3 and image.shape[0] == self.num_channels and image.shape[0] < image.shape[1]:
+                    image = np.transpose(image, (1, 2, 0))
+
+                # If a single-channel image is missing the channel axis, add it
+                if image.ndim == 2:
+                    image = np.expand_dims(image, -1)
+
                 yield image
-        
+
         # Create TensorFlow dataset
         tf_dataset = tf.data.Dataset.from_generator(
             generator,
@@ -441,10 +496,12 @@ class TensorFlowDiffusionModelAdapter(Model):
                 dtype=tf.float32
             )
         )
-        
-        # Batch the dataset
-        tf_dataset = tf_dataset.batch(self.tf_model.batch_size)
-        
+        # Batch the dataset. Use drop_remainder=True to ensure consistent batch sizes
+        # (avoids a final smaller batch which can cause shape mismatches during XLA compilation)
+        tf_dataset = tf_dataset.batch(self.tf_model.batch_size, drop_remainder=True)
+        # Add simple prefetch to improve input pipeline performance
+        tf_dataset = tf_dataset.prefetch(tf.data.AUTOTUNE)
+
         # Train the TensorFlow model
         self.tf_model.train(tf_dataset, epochs=self.epochs)
     

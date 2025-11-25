@@ -1,13 +1,15 @@
-from src.domain.interfaces.metrics import VariabilityMetric, SimilarityMetric
+import numpy as np
+import torch
+import torch.nn as nn
+from scipy import linalg
+from torch.utils.data import DataLoader
+from torch.utils.data import Dataset as TorchDataset
+from torchvision.models import ResNet18_Weights, resnet18
+
 from src.domain.entities.dataset import Dataset
 from src.domain.entities.tensor import Tensor
-import torch
-from torch.utils.data import Dataset as TorchDataset
-import torch.nn as nn
-from torchvision.models import resnet18, ResNet18_Weights
-from torch.utils.data import DataLoader
-import numpy as np
-from scipy import linalg
+from src.domain.interfaces.metrics import SimilarityMetric, VariabilityMetric
+
 
 class ResNet:
     """
@@ -37,14 +39,40 @@ class ResNet:
         features_list = []
 
         with torch.no_grad():
-            for inputs, _ in loader:
+            for batch in loader:
+                # Support datasets returning either (inputs, labels) or inputs only
+                if isinstance(batch, (list, tuple)):
+                    inputs = batch[0]
+                else:
+                    inputs = batch
+
+                # Convert numpy arrays to torch tensors if necessary
+                if not isinstance(inputs, torch.Tensor):
+                    np_inputs = np.array(inputs)
+                    inputs = torch.as_tensor(np_inputs, dtype=torch.float32)
+
                 inputs = inputs.to(self.device)
-                # Ensure 3 channels for ResNet
+
+                # Ensure 3 channels for ResNet (repeat single channel into 3)
+                # If inputs are NHWC (batch, H, W, C), detect and permute to NCHW
+                if inputs.dim() == 3:
+                    # single image without batch dim -> add batch
+                    inputs = inputs.unsqueeze(0)
+
+                if inputs.dim() == 4:
+                    # Heuristic: if channel dim is last (NHWC) and equals 1 or 3, permute
+                    if inputs.shape[-1] in (1, 3) and inputs.shape[1] not in (1, 3):
+                        inputs = inputs.permute(0, 3, 1, 2).contiguous()
+
+                # Now ensure we have channels-first and repeat single channel into 3
                 if inputs.shape[1] == 1:
                     inputs = inputs.repeat(1, 3, 1, 1)
 
                 features = self.model(inputs)
                 features_list.append(features.cpu().numpy())
+
+        if len(features_list) == 0:
+            return np.zeros((0, self.model.fc.in_features if hasattr(self.model, 'fc') else 512))
 
         return np.concatenate(features_list, axis=0)
 

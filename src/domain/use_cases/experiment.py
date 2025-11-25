@@ -1,8 +1,9 @@
 import logging
+
 from src.domain.entities.dataset import Dataset
 from src.domain.entities.tensor import Tensor
 from src.domain.interfaces.dataset_loader import DatasetLoader
-from src.domain.interfaces.metrics import VariabilityMetric, SimilarityMetric
+from src.domain.interfaces.metrics import SimilarityMetric, VariabilityMetric
 from src.domain.interfaces.model import Model
 
 logger = logging.getLogger(__name__)
@@ -94,9 +95,9 @@ class Experiment:
                 # 5. Compute Similarity
                 similarity_score = self.compute_similarity(dataset, generated_images)
                 logger.info(f"Similarity (FID-like) for {dataset_name}: {similarity_score:.4f}")
-                
-            except Exception as e:
-                logger.error(f"Failed to process {dataset_name}: {e}")
+
+            except Exception as error:
+                logger.error(f"Failed to process {dataset_name}: {error}")
+                raise error
         
         logger.info("Experiment completed.")
-

@@ -1,9 +1,11 @@
-from src.infrastructure.logging import setup_logging
+from src.domain.use_cases.experiment import Experiment
 from src.infrastructure.configuration import ExperimentConfiguration
 from src.infrastructure.loaders import MedMNISTDatasetLoader
-from src.infrastructure.metrics import ResNetMSDVariabilityMetric, FIDSimilarityMetric
-from src.infrastructure.models import DiffusionModelWrapper
-from src.domain.use_cases.experiment import Experiment
+from src.infrastructure.logging import setup_logging
+from src.infrastructure.metrics import FIDSimilarityMetric, ResNetMSDVariabilityMetric
+from src.infrastructure.tensorflow_diffusion_model import (
+    TensorFlowDiffusionModelAdapter,
+)
 
 
 def main():
@@ -17,7 +19,10 @@ def main():
     dataset_loader = MedMNISTDatasetLoader()
     variability_metric = ResNetMSDVariabilityMetric()
     similarity_metric = FIDSimilarityMetric()
-    model = DiffusionModelWrapper()
+    model = TensorFlowDiffusionModelAdapter(
+        image_size=config.image_size,
+        num_channels=3
+    )
     
     # 4. Create and run experiment
     experiment = Experiment(
@@ -34,4 +39,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
