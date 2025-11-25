@@ -12,3 +12,7 @@ wheels/
 # directories from integrated development environments (IDE)
 .idea/
 .vscode/*
+
+# generated files
+logs/
+checkpoint/
