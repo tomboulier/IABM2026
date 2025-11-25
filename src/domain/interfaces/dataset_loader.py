@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from src.domain.entities.dataset import Dataset
-from src.domain.entities.tensor import TensorDataset
 
 
 class DatasetLoader(ABC):

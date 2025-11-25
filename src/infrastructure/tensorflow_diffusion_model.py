@@ -1,5 +1,5 @@
 import math
-from utils import display
+# from utils import display  # TODO: Create utils module or remove display functionality
 import tensorflow as tf
 from tensorflow import keras
 layers = keras.layers
@@ -127,21 +127,22 @@ def offset_cosine_diffusion_schedule(diffusion_times):
     return noise_rates, signal_rates
 
 # Callbacks
-class ImageGenerator(callbacks.Callback):
-    """Generates and saves sample images after every epoch."""
-    def __init__(self, num_img, plot_diffusion_steps: int):
-        self.num_img = num_img
-        self.plot_diffusion_steps = plot_diffusion_steps
-
-    def on_epoch_end(self, epoch, logs=None):
-        generated_images = self.model.generate(
-            num_images=self.num_img,
-            diffusion_steps=self.plot_diffusion_steps,
-        ).numpy()
-        display(
-            generated_images,
-            save_to=f"./output/generated_img_{epoch:03d}.png",
-        )
+# TODO: Uncomment ImageGenerator when utils.display is available
+# class ImageGenerator(callbacks.Callback):
+#     """Generates and saves sample images after every epoch."""
+#     def __init__(self, num_img, plot_diffusion_steps: int):
+#         self.num_img = num_img
+#         self.plot_diffusion_steps = plot_diffusion_steps
+# 
+#     def on_epoch_end(self, epoch, logs=None):
+#         generated_images = self.model.generate(
+#             num_images=self.num_img,
+#             diffusion_steps=self.plot_diffusion_steps,
+#         ).numpy()
+#         display(
+#             generated_images,
+#             save_to=f"./output/generated_img_{epoch:03d}.png",
+#         )
 
 class DiffusionModel(models.Model):
     def __init__(self,
@@ -196,7 +197,7 @@ class DiffusionModel(models.Model):
 
         # callbacks
         self.callbacks_list = [
-            ImageGenerator(num_img=5, plot_diffusion_steps=self.plot_diffusion_steps),
+            # ImageGenerator(num_img=5, plot_diffusion_steps=self.plot_diffusion_steps),  # Commented out - needs utils.display
             callbacks.ModelCheckpoint(
                         filepath="./checkpoint/ckpt.weights.h5",
                         save_weights_only=True,
