@@ -113,6 +113,10 @@ def get_unet(image_size: int, noise_embedding_size: int, num_channels: int = 1):
     x = UpBlock(32, block_depth=2)([x, skips])
 
     x = layers.Conv2D(num_channels, kernel_size=1, kernel_initializer="zeros")(x)
+    
+    # Ensure output size matches input size exactly
+    # Resize to original image_size in case of any size mismatch from convolutions
+    x = layers.Resizing(image_size, image_size, interpolation="bilinear")(x)
 
     unet = models.Model([noisy_images, noise_variances], x, name="unet")
     return unet
