@@ -45,7 +45,17 @@ def UpBlock(width, block_depth):
         x, skips = x
         x = layers.UpSampling2D(size=2, interpolation="bilinear")(x)
         for _ in range(block_depth):
-            x = layers.Concatenate()([x, skips.pop()])
+            skip = skips.pop()
+            # Handle shape mismatch by cropping skip connection to match x
+            skip_shape = skip.shape
+            x_shape = x.shape
+            if skip_shape[1] != x_shape[1] or skip_shape[2] != x_shape[2]:
+                # Crop skip to match x dimensions
+                crop_h = skip_shape[1] - x_shape[1]
+                crop_w = skip_shape[2] - x_shape[2]
+                if crop_h > 0 or crop_w > 0:
+                    skip = layers.Cropping2D(cropping=((0, crop_h), (0, crop_w)))(skip)
+            x = layers.Concatenate()([x, skip])
             x = ResidualBlock(width)(x)
         return x
 
