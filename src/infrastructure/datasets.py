@@ -6,9 +6,7 @@ import torch
 import medmnist
 from medmnist import INFO
 from torchvision import transforms
-    def __getitem__(self, idx: int) -> tuple[Any, Any]:
-        """Get an item and its label from the dataset."""
-        ...
+from src.domain.entities.dataset import Dataset
 
 
 def load_dataset(name: str, max_samples: int | None = None, image_size: int = 224) -> Dataset:
