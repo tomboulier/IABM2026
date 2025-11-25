@@ -17,6 +17,12 @@ dependencies = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.pytest.ini_options]
+pythonpath = ["."]
+filterwarnings = [
+    "ignore::DeprecationWarning",  # Ignore numpy/keras compatibility warnings
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["."]
 

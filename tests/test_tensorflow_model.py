@@ -39,6 +39,7 @@ def test_tensorflow_model_creation():
     assert model.image_size == 28
 
 
+@pytest.mark.filterwarnings("ignore:Your input ran out of data:UserWarning")
 def test_tensorflow_model_training():
     """
     Test that the TensorFlow model trains without errors.
@@ -64,6 +65,7 @@ def test_tensorflow_model_training():
         pytest.fail(f"Training failed with error: {e}")
 
 
+@pytest.mark.filterwarnings("ignore:Your input ran out of data:UserWarning")
 def test_tensorflow_model_generation():
     """
     Test that the TensorFlow model generates images with correct shape.
