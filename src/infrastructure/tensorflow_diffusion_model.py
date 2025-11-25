@@ -343,3 +343,109 @@ class DiffusionModel(models.Model):
         self.noise_loss_tracker.update_state(noise_loss)
 
         return {m.name: m.result() for m in self.metrics}
+
+
+# ==============================================================================
+# ADAPTER LAYER: Implements domain Model interface
+# ==============================================================================
+
+from src.domain.interfaces.model import Model
+from src.domain.types import Dataset, Tensor
+import numpy as np
+
+
+class TensorFlowDiffusionModelAdapter(Model):
+    """
+    Adapter that wraps the TensorFlow DiffusionModel to implement the domain's Model interface.
+    
+    This class handles boundary conversions:database
+    - Accepts framework-agnostic Dataset protocol
+    - Returns numpy arrays (Tensor protocol) instead of TensorFlow tensors
+    
+    This is how Clean Architecture works: domain defines the interface,
+    infrastructure implements it with framework-specific code and adapts at boundaries.
+    """
+    
+    def __init__(self,
+                 image_size: int = 28,
+                 num_channels: int = 1,
+                 noise_embedding_size: int = 32,
+                 batch_size: int = 32,
+                 ema: float = 0.995,
+                 plot_diffusion_steps: int = 20,
+                 learning_rate: float = 1e-4,
+                 weight_decay: float = 1e-4,
+                 epochs: int = 1):
+        """
+        Initialize TensorFlow diffusion model adapter.
+        
+        Parameters match the underlying TensorFlow model.
+        """
+        self.image_size = image_size
+        self.num_channels = num_channels
+        self.epochs = epochs
+        self.plot_diffusion_steps = plot_diffusion_steps
+        
+        # Create the actual TensorFlow model
+        self.tf_model = DiffusionModel(
+            image_size=image_size,
+            num_channels=num_channels,
+            noise_embedding_size=noise_embedding_size,
+            batch_size=batch_size,
+            ema=ema,
+            plot_diffusion_steps=plot_diffusion_steps,
+            learning_rate=learning_rate,
+            weight_decay=weight_decay
+        )
+    
+    def train(self, dataset: Dataset):
+        """
+        Train the model on a dataset.
+        
+        Adapts from domain Dataset protocol to TensorFlow dataset.
+        """
+        # Convert domain Dataset to TensorFlow dataset
+        # Assuming the dataset already has the right format (PyTorch or TensorFlow)
+        # For now, we'll need to handle this conversion carefully
+        
+        # Create a TensorFlow dataset from the protocol-based dataset
+        def generator():
+            for i in range(len(dataset)):
+                image, label = dataset[i]
+                # Convert to numpy if needed
+                if hasattr(image, 'numpy'):
+                    image = image.numpy()
+                yield image
+        
+        # Create TensorFlow dataset
+        tf_dataset = tf.data.Dataset.from_generator(
+            generator,
+            output_signature=tf.TensorSpec(
+                shape=(self.image_size, self.image_size, self.num_channels),
+                dtype=tf.float32
+            )
+        )
+        
+        # Batch the dataset
+        tf_dataset = tf_dataset.batch(self.tf_model.batch_size)
+        
+        # Train the TensorFlow model
+        self.tf_model.train(tf_dataset, epochs=self.epochs)
+    
+    def generate_images(self, n: int) -> Tensor:
+        """
+        Generate images using the trained model.
+        
+        Returns numpy arrays (implements Tensor protocol) instead of TensorFlow tensors.
+        This is the boundary conversion - TensorFlow → numpy.
+        """
+        # Generate using TensorFlow model
+        generated_tf = self.tf_model.generate(
+            num_images=n,
+            diffusion_steps=self.plot_diffusion_steps
+        )
+        
+        # Convert TensorFlow tensor to numpy array (boundary conversion)
+        generated_np = generated_tf.numpy()
+        
+        return generated_np
