@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from torch.utils.data import Dataset
+from src.domain.entities.datasets import Dataset
 
 
 class DatasetLoader(ABC):
@@ -19,3 +19,4 @@ class DatasetLoader(ABC):
             Dataset instance
         """
         pass
+

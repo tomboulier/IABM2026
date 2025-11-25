@@ -1,8 +1,23 @@
+"""Dataset loading and Dataset protocol definition."""
+from typing import Protocol, Any, runtime_checkable
 import torch
 import medmnist
 from medmnist import INFO
 from torchvision import transforms
-from torch.utils.data import Dataset
+
+
+@runtime_checkable
+class Dataset(Protocol):
+    """Framework-independent dataset abstraction."""
+    
+    def __len__(self) -> int:
+        """Return the number of items in the dataset."""
+        ...
+    
+    def __getitem__(self, idx: int) -> tuple[Any, Any]:
+        """Get an item and its label from the dataset."""
+        ...
+
 
 def load_dataset(name: str, max_samples: int | None = None, image_size: int = 224) -> Dataset:
     """

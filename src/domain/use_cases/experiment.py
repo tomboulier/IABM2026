@@ -1,6 +1,6 @@
 import logging
-import torch
-from torch.utils.data import Dataset
+from src.domain.entities.datasets import Dataset
+from src.domain.entities.models import Tensor
 from src.domain.interfaces.dataset_loader import DatasetLoader
 from src.domain.interfaces.metrics import VariabilityMetric, SimilarityMetric
 from src.domain.interfaces.model import Model
@@ -59,11 +59,11 @@ class Experiment:
         """Train the model on the dataset."""
         self.model.train(dataset)
     
-    def generate_images(self, n: int = 100) -> torch.Tensor:
+    def generate_images(self, n: int = 100) -> Tensor:
         """Generate images using the trained model."""
         return self.model.generate_images(n=n)
     
-    def compute_similarity(self, dataset: Dataset, generated: torch.Tensor) -> float:
+    def compute_similarity(self, dataset: Dataset, generated: Tensor) -> float:
         """Compute similarity between real and generated data."""
         return self.similarity_metric.compute(dataset, generated)
     

@@ -1,6 +1,8 @@
 from src.domain.interfaces.metrics import VariabilityMetric, SimilarityMetric
+from src.domain.entities.datasets import Dataset
+from src.domain.entities.models import Tensor
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset as TorchDataset
 import torch.nn as nn
 from torchvision.models import resnet18, ResNet18_Weights
 from torch.utils.data import DataLoader
@@ -27,7 +29,7 @@ class ResNet:
         """
         return self.model
 
-    def get_features(self, dataset: Dataset, batch_size: int = 32) -> np.ndarray:
+    def get_features(self, dataset: TorchDataset, batch_size: int = 32) -> np.ndarray:
         """
         Extracts features from a dataset using the encapsulated ResNet model.
         """
@@ -70,7 +72,7 @@ class ResNetMSDVariabilityMetric(VariabilityMetric):
 class FIDSimilarityMetric(SimilarityMetric):
     """Concrete implementation using Fréchet Inception Distance."""
     
-    def compute(self, real_dataset: Dataset, generated: torch.Tensor) -> float:
+    def compute(self, real_dataset: Dataset, generated: Tensor) -> float:
         """
         Computes the Fréchet Inception Distance (FID) between two datasets.
         Uses the same ResNet18 backbone for consistency in this project context,
@@ -79,10 +81,10 @@ class FIDSimilarityMetric(SimilarityMetric):
         resnet = ResNet()
         
         # Extract features
-        feats_real = resnet.get_features(dataset_real)
+        feats_real = resnet.get_features(real_dataset)
         
-        # Handle generated data: if it's already a tensor of images, wrap it
-        if isinstance(dataset_generated, torch.Tensor):
+        # Handle generated data: if it's a tensor of images, wrap it
+        if isinstance(generated, torch.Tensor):
             class TensorDataset(torch.utils.data.Dataset):
                 def __init__(self, tensor):
                     self.tensor = tensor
@@ -90,9 +92,9 @@ class FIDSimilarityMetric(SimilarityMetric):
                     return self.tensor[index], 0 # Dummy label
                 def __len__(self):
                     return len(self.tensor)
-            dataset_generated = TensorDataset(dataset_generated)
+            generated = TensorDataset(generated)
             
-        feats_gen = resnet.get_features(dataset_generated)
+        feats_gen = resnet.get_features(generated)
         
         # Calculate statistics
         mu1, sigma1 = np.mean(feats_real, axis=0), np.cov(feats_real, rowvar=False)

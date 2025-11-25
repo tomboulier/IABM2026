@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-import torch
-from torch.utils.data import Dataset
+from src.domain.entities.datasets import Dataset
+from src.domain.entities.models import Tensor
 
 
 class VariabilityMetric(ABC):
@@ -24,7 +24,7 @@ class SimilarityMetric(ABC):
     """Abstract interface for similarity metrics."""
     
     @abstractmethod
-    def compute(self, real_dataset: Dataset, generated: torch.Tensor) -> float:
+    def compute(self, real_dataset: Dataset, generated: Tensor) -> float:
         """
         Compute similarity between real and generated data.
         
@@ -36,3 +36,4 @@ class SimilarityMetric(ABC):
             Similarity score
         """
         pass
+

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-import torch
-from torch.utils.data import Dataset
+from src.domain.entities.datasets import Dataset
+from src.domain.entities.models import Tensor
 
 
 class Model(ABC):
@@ -17,7 +17,7 @@ class Model(ABC):
         pass
     
     @abstractmethod
-    def generate_images(self, n: int) -> torch.Tensor:
+    def generate_images(self, n: int) -> Tensor:
         """
         Generate images using the trained model.
         
@@ -28,3 +28,4 @@ class Model(ABC):
             Generated images tensor
         """
         pass
+

@@ -1,7 +1,8 @@
 from src.domain.interfaces.model import Model
-from src.domain.entities.models import diffusion_model, DiffusionModel
+from src.domain.entities.models import diffusion_model, DiffusionModel, Tensor
+from src.domain.entities.datasets import Dataset
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset as TorchDataset
 
 
 class DiffusionModelWrapper(Model):
@@ -15,6 +16,7 @@ class DiffusionModelWrapper(Model):
         """Train the diffusion model."""
         self.model_instance.train(dataset)
     
-    def generate_images(self, n: int) -> torch.Tensor:
+    def generate_images(self, n: int) -> Tensor:
         """Generate images using the diffusion model."""
         return self.model_instance.generate_images(n)
+
