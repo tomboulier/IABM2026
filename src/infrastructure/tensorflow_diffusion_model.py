@@ -902,6 +902,12 @@ class TensorFlowDiffusionModelAdapter(Model):
         The final batch uses drop_remainder=True to avoid shape mismatches
         during XLA compilation.
         """
+        tf_dataset = self.adapt_dataset_to_tensorflow(dataset)
+
+        # Train the TensorFlow model
+        self.tf_model.train(tf_dataset, epochs=self.epochs)
+
+    def adapt_dataset_to_tensorflow(self, dataset: Dataset) -> tf.data.Dataset:
         # Convert domain Dataset to TensorFlow dataset
         # This generator function handles the conversion from domain protocol to TensorFlow
 
@@ -963,9 +969,7 @@ class TensorFlowDiffusionModelAdapter(Model):
         tf_dataset = tf_dataset.batch(self.tf_model.batch_size, drop_remainder=True)
         # Add simple prefetch to improve input pipeline performance
         tf_dataset = tf_dataset.prefetch(tf.data.AUTOTUNE)
-
-        # Train the TensorFlow model
-        self.tf_model.train(tf_dataset, epochs=self.epochs)
+        return tf_dataset
 
     def generate_images(self, n: int) -> Tensor:
         """
