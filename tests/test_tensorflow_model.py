@@ -19,6 +19,8 @@ class MinimalDataset:
             np.random.rand(size, size, 1).astype(np.float32)
             for _ in range(num_samples)
         ]
+        self.image_size = size
+        self.num_channels = self.images[0].shape[-1]
 
     def __len__(self):
         return self.num_samples
