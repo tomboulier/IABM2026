@@ -51,6 +51,7 @@ def ResidualBlock(width):
     callable
         A function that applies the residual block to an input tensor.
     """
+
     def apply(x):
         input_width = x.shape[3]
         # Adjust residual connection if input width doesn't match output width
@@ -94,6 +95,7 @@ def DownBlock(width, block_depth):
     callable
         A function that applies the downsampling block to (x, skips) tuple.
     """
+
     def apply(x):
         x, skips = x
         # Apply residual blocks and store outputs for skip connections
@@ -126,6 +128,7 @@ def UpBlock(width, block_depth):
     callable
         A function that applies the upsampling block to (x, skips) tuple.
     """
+
     def apply(x):
         x, skips = x
         # Upsample by factor of 2 using bilinear interpolation
@@ -784,11 +787,37 @@ class DiffusionModel(models.Model):
         return {m.name: m.result() for m in self.metrics}
 
 
-def adapt_dataset_to_tensorflow(dataset: Dataset, batch_size: int) -> tf.data.Dataset:
-    # Convert domain Dataset to TensorFlow dataset
-    # This generator function handles the conversion from domain protocol to TensorFlow
+class TensorFlowDatasetAdapter:
+    """
+    Adapter to convert domain Dataset protocol to TensorFlow tf.data.Dataset.
 
-    def generator():
+    This adapter handles:
+    - Conversion from domain Dataset to tf.data.Dataset
+    - Framework conversions (PyTorch tensors, numpy arrays → TensorFlow tensors)
+    - Channel ordering adjustments (C,H,W) → (H,W,C)
+
+    This ensures the domain layer remains independent of TensorFlow specifics.
+    """
+
+    def __init__(self,
+                 dataset: Dataset,
+                 batch_size: int
+                 ):
+        """
+        Initialize the TensorFlow dataset adapter.
+
+        Parameters
+        ----------
+        dataset : Dataset
+            The domain Dataset protocol instance.
+        batch_size : int
+            The batch size for the TensorFlow dataset.
+        """
+        self.dataset = dataset
+        self.batch_size = batch_size
+
+    @staticmethod
+    def generator(dataset: Dataset):
         """
         Generator that yields images from the dataset in TensorFlow format.
 
@@ -833,20 +862,24 @@ def adapt_dataset_to_tensorflow(dataset: Dataset, batch_size: int) -> tf.data.Da
 
             yield image
 
-    # Create TensorFlow dataset
-    tf_dataset = tf.data.Dataset.from_generator(
-        generator,
-        output_signature=tf.TensorSpec(
-            shape=(dataset.image_size, dataset.image_size, dataset.num_channels),
-            dtype=tf.float32
+    def to_tensorflow_dataset(self) -> tf.data.Dataset:
+        # Convert domain Dataset to TensorFlow dataset
+        # This generator function handles the conversion from domain protocol to TensorFlow
+
+        # Create TensorFlow dataset
+        tf_dataset = tf.data.Dataset.from_generator(
+            lambda: self.generator(self.dataset),
+            output_signature=tf.TensorSpec(
+                shape=(self.dataset.image_size, self.dataset.image_size, self.dataset.num_channels),
+                dtype=tf.float32
+            )
         )
-    )
-    # Batch the dataset. Use drop_remainder=True to ensure consistent batch sizes
-    # (avoids a final smaller batch which can cause shape mismatches during XLA compilation)
-    tf_dataset = tf_dataset.batch(batch_size, drop_remainder=True)
-    # Add simple prefetch to improve input pipeline performance
-    tf_dataset = tf_dataset.prefetch(tf.data.AUTOTUNE)
-    return tf_dataset
+        # Batch the dataset. Use drop_remainder=True to ensure consistent batch sizes
+        # (avoids a final smaller batch which can cause shape mismatches during XLA compilation)
+        tf_dataset = tf_dataset.batch(self.batch_size, drop_remainder=True)
+        # Add simple prefetch to improve input pipeline performance
+        tf_dataset = tf_dataset.prefetch(tf.data.AUTOTUNE)
+        return tf_dataset
 
 
 class TensorFlowDiffusionModelAdapter(Model):
@@ -975,7 +1008,7 @@ class TensorFlowDiffusionModelAdapter(Model):
             raise ValueError(f"Dataset num_channels {dataset.num_channels} of dataset {dataset} "
                              f"is not compatible with adapter num_channels {self.num_channels}.")
         # Adapt domain Dataset to TensorFlow tf.data.Dataset
-        tf_dataset = adapt_dataset_to_tensorflow(dataset, self.tf_model.batch_size)
+        tf_dataset = TensorFlowDatasetAdapter(dataset, self.tf_model.batch_size).to_tensorflow_dataset()
 
         # Train the TensorFlow model
         self.tf_model.train(tf_dataset, epochs=self.epochs)
