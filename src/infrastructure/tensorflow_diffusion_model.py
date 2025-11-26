@@ -954,7 +954,7 @@ class TensorFlowDiffusionModelAdapter(Model):
                 # Handle channel ordering: (C, H, W) → (H, W, C)
                 # PyTorch uses channels-first, TensorFlow uses channels-last
                 # Check if first dimension is channel count and smaller than spatial dims
-                if image.ndim == 3 and image.shape[0] == self.num_channels and image.shape[0] < image.shape[1]:
+                if image.ndim == 3 and image.shape[0] == dataset.num_channels and image.shape[0] < image.shape[1]:
                     image = np.transpose(image, (1, 2, 0))
 
                 # Handle grayscale images without explicit channel dimension
@@ -968,7 +968,7 @@ class TensorFlowDiffusionModelAdapter(Model):
         tf_dataset = tf.data.Dataset.from_generator(
             generator,
             output_signature=tf.TensorSpec(
-                shape=(self.image_size, self.image_size, self.num_channels),
+                shape=(dataset.image_size, dataset.image_size, dataset.num_channels),
                 dtype=tf.float32
             )
         )
