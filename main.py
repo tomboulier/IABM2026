@@ -1,3 +1,5 @@
+import argparse
+
 from src.domain.use_cases.experiment import Experiment
 from src.infrastructure.configuration import ExperimentConfiguration
 from src.infrastructure.loaders import MedMNISTDatasetLoader
@@ -8,27 +10,38 @@ from src.infrastructure.tensorflow_diffusion_model import (
 )
 
 
-def main():
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(
+        description="Run experiment with specified configuration file."
+    )
+    parser.add_argument(
+        "-c",
+        "--config",
+        dest="config",
+        default="configuration.toml",
+        help="Path to experiment configuration TOML file (default: configuration.toml)",
+    )
+    return parser.parse_args(argv)
+
+
+def main(config_path: str = None):
     # 1. Setup Logging
-    """
-    Bootstrap and execute the experiment pipeline using the project's configuration and concrete dependencies.
-    
-    Loads configuration from "configuration.toml", sets up logging, instantiates the dataset loader, metrics, and model adapter with configuration-driven parameters, constructs an Experiment with those dependencies and configuration values, and runs the experiment.
-    """
     setup_logging()
-    
+
     # 2. Load Configuration
-    config = ExperimentConfiguration.load("configuration.toml")
-    
+    if config_path is None:
+        config_path = "configuration.toml"
+    config = ExperimentConfiguration.load(config_path)
+
     # 3. Instantiate concrete dependencies (outer layer responsibility)
     dataset_loader = MedMNISTDatasetLoader()
     variability_metric = ResNetMSDVariabilityMetric()
     similarity_metric = FIDSimilarityMetric()
     model = TensorFlowDiffusionModelAdapter(
         image_size=config.image_size,
-        num_channels=3
+        num_channels=3,
     )
-    
+
     # 4. Create and run experiment
     experiment = Experiment(
         datasets=config.datasets,
@@ -37,10 +50,11 @@ def main():
         dataset_loader=dataset_loader,
         variability_metric=variability_metric,
         similarity_metric=similarity_metric,
-        model=model
+        model=model,
     )
     experiment.run()
 
 
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+    main(config_path=args.config)
