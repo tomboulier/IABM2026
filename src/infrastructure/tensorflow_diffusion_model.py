@@ -1,8 +1,14 @@
 import math
 
-# from utils import display  # TODO: Create utils module or remove display functionality
+import numpy as np
 import tensorflow as tf
 from tensorflow import keras
+
+from src.domain.entities.dataset import Dataset
+from src.domain.entities.tensor import Tensor
+from src.domain.interfaces.model import Model
+
+# from utils import display  # TODO: Create utils module or remove display functionality
 
 layers = keras.layers
 models = keras.models
@@ -11,6 +17,7 @@ metrics = keras.metrics
 register_keras_serializable = keras.utils.register_keras_serializable
 callbacks = keras.callbacks
 optimizers = keras.optimizers
+
 
 def ResidualBlock(width):
     def apply(x):
@@ -63,6 +70,7 @@ def UpBlock(width, block_depth):
 
     return apply
 
+
 @register_keras_serializable(package="diffusion")
 def sinusoidal_embedding(x, noise_embedding_size: int):
     frequencies = tf.exp(
@@ -77,6 +85,7 @@ def sinusoidal_embedding(x, noise_embedding_size: int):
         [tf.sin(angular_speeds * x), tf.cos(angular_speeds * x)], axis=3
     )
     return embeddings
+
 
 def get_unet(image_size: int, noise_embedding_size: int, num_channels: int = 1):
     noisy_images = layers.Input(shape=(image_size, image_size, num_channels))
@@ -115,14 +124,13 @@ def get_unet(image_size: int, noise_embedding_size: int, num_channels: int = 1):
     x = UpBlock(32, block_depth=2)([x, skips])
 
     x = layers.Conv2D(num_channels, kernel_size=1, kernel_initializer="zeros")(x)
-    
+
     # Ensure output size matches input size exactly
     # Resize to original image_size in case of any size mismatch from convolutions
     x = layers.Resizing(image_size, image_size, interpolation="bilinear")(x)
 
     unet = models.Model([noisy_images, noise_variances], x, name="unet")
     return unet
-
 
 
 def offset_cosine_diffusion_schedule(diffusion_times):
@@ -141,6 +149,7 @@ def offset_cosine_diffusion_schedule(diffusion_times):
     noise_rates = tf.sin(diffusion_angles)
 
     return noise_rates, signal_rates
+
 
 # Callbacks
 # TODO: Uncomment ImageGenerator when utils.display is available
@@ -170,7 +179,7 @@ class DiffusionModel(models.Model):
                  load_weights_path: str = None,
                  plot_diffusion_steps: int = 20,
                  learning_rate: float = 1e-4,
-                 weight_decay: float = 1e-4,):
+                 weight_decay: float = 1e-4, ):
         """Implements a diffusion model with a U-Net architecture.
         
 
@@ -204,9 +213,10 @@ class DiffusionModel(models.Model):
         self.plot_diffusion_steps = plot_diffusion_steps
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
-        
+
         # model components
-        self.normalizer = layers.Normalization(axis=-1) # normalize images to mean 0 and variance 1 (axis=-1 for channels last)
+        self.normalizer = layers.Normalization(
+            axis=-1)  # normalize images to mean 0 and variance 1 (axis=-1 for channels last)
         self.network = get_unet(image_size, noise_embedding_size, num_channels=num_channels)
         self.ema_network = models.clone_model(self.network)
         self.diffusion_schedule = offset_cosine_diffusion_schedule
@@ -215,14 +225,14 @@ class DiffusionModel(models.Model):
         self.callbacks_list = [
             # ImageGenerator(num_img=5, plot_diffusion_steps=self.plot_diffusion_steps),  # Commented out - needs utils.display
             callbacks.ModelCheckpoint(
-                        filepath="./checkpoint/ckpt.weights.h5",
-                        save_weights_only=True,
-                        save_freq="epoch",
-                        verbose=0,
-                    ),
+                filepath="./checkpoint/ckpt.weights.h5",
+                save_weights_only=True,
+                save_freq="epoch",
+                verbose=0,
+            ),
             callbacks.TensorBoard(log_dir="./logs"),
-            ]
-        
+        ]
+
         # load weights if a path is provided
         self.load_weights_path = load_weights_path
         # Tracker metric must be created in __init__ (or build) to avoid
@@ -266,7 +276,7 @@ class DiffusionModel(models.Model):
         self.normalizer.adapt(dataset)
         self.compile(
             optimizer=optimizers.AdamW(
-            learning_rate=self.learning_rate, weight_decay=self.weight_decay
+                learning_rate=self.learning_rate, weight_decay=self.weight_decay
             ),
             loss=keras.losses.MeanSquaredError(),
         )
@@ -278,7 +288,7 @@ class DiffusionModel(models.Model):
         return [self.noise_loss_tracker]
 
     def denormalize(self, images):
-        images = self.normalizer.mean + images * self.normalizer.variance**0.5
+        images = self.normalizer.mean + images * self.normalizer.variance ** 0.5
         return tf.clip_by_value(images, 0.0, 1.0)
 
     def denoise(self, noisy_images, noise_rates, signal_rates, training):
@@ -287,7 +297,7 @@ class DiffusionModel(models.Model):
         else:
             network = self.ema_network
         pred_noises = network(
-            [noisy_images, noise_rates**2], training=training
+            [noisy_images, noise_rates ** 2], training=training
         )
         pred_images = (noisy_images - noise_rates * pred_noises) / signal_rates
 
@@ -316,7 +326,7 @@ class DiffusionModel(models.Model):
                 next_diffusion_times
             )
             current_images = (
-                next_signal_rates * pred_images + next_noise_rates * pred_noises
+                    next_signal_rates * pred_images + next_noise_rates * pred_noises
             )
         return pred_images
 
@@ -335,7 +345,7 @@ class DiffusionModel(models.Model):
             num_images = int(initial_noise.shape[0])
             generated_images = self.reverse_diffusion(
                 initial_noise, diffusion_steps
-                )
+            )
         generated_images = self.denormalize(generated_images)
         return generated_images
 
@@ -368,7 +378,7 @@ class DiffusionModel(models.Model):
         self.noise_loss_tracker.update_state(noise_loss)
 
         for weight, ema_weight in zip(
-            self.network.weights, self.ema_network.weights
+                self.network.weights, self.ema_network.weights
         ):
             ema_weight.assign(self.ema * ema_weight + (1 - self.ema) * weight)
 
@@ -396,11 +406,7 @@ class DiffusionModel(models.Model):
 # ADAPTER LAYER: Implements domain Model interface
 # ==============================================================================
 
-import numpy as np
 
-from src.domain.entities.dataset import Dataset
-from src.domain.entities.tensor import Tensor
-from src.domain.interfaces.model import Model
 
 
 class TensorFlowDiffusionModelAdapter(Model):
@@ -414,7 +420,7 @@ class TensorFlowDiffusionModelAdapter(Model):
     This is how Clean Architecture works: domain defines the interface,
     infrastructure implements it with framework-specific code and adapts at boundaries.
     """
-    
+
     def __init__(self,
                  image_size: int = 28,
                  num_channels: int = 3,  # Default to RGB
@@ -434,7 +440,7 @@ class TensorFlowDiffusionModelAdapter(Model):
         self.num_channels = num_channels
         self.epochs = epochs
         self.plot_diffusion_steps = plot_diffusion_steps
-        
+
         # Create the actual TensorFlow model
         self.tf_model = DiffusionModel(
             image_size=image_size,
@@ -446,13 +452,14 @@ class TensorFlowDiffusionModelAdapter(Model):
             learning_rate=learning_rate,
             weight_decay=weight_decay
         )
-    
+
     def train(self, dataset: Dataset):
         """
         Train the model on a dataset.
         
         Adapts from domain Dataset protocol to TensorFlow dataset.
         """
+
         # Convert domain Dataset to TensorFlow dataset
         # Assuming the dataset already has the right format (PyTorch or TensorFlow)
         # For now, we'll need to handle this conversion carefully
@@ -506,7 +513,7 @@ class TensorFlowDiffusionModelAdapter(Model):
 
         # Train the TensorFlow model
         self.tf_model.train(tf_dataset, epochs=self.epochs)
-    
+
     def generate_images(self, n: int) -> Tensor:
         """
         Generate images using the trained model.
@@ -519,8 +526,8 @@ class TensorFlowDiffusionModelAdapter(Model):
             num_images=n,
             diffusion_steps=self.plot_diffusion_steps
         )
-        
+
         # Convert TensorFlow tensor to numpy array (boundary conversion)
         generated_np = generated_tf.numpy()
-        
+
         return generated_np
