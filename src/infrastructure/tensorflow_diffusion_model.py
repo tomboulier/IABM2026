@@ -402,13 +402,6 @@ class DiffusionModel(models.Model):
         return {m.name: m.result() for m in self.metrics}
 
 
-# ==============================================================================
-# ADAPTER LAYER: Implements domain Model interface
-# ==============================================================================
-
-
-
-
 class TensorFlowDiffusionModelAdapter(Model):
     """
     Adapter that wraps the TensorFlow DiffusionModel to implement the domain's Model interface.
