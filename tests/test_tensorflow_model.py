@@ -2,6 +2,7 @@
 import numpy as np
 import pytest
 
+from src.domain.entities.dataset import Dataset
 from src.infrastructure.tensorflow_diffusion_model import TensorFlowDiffusionModelAdapter
 
 
@@ -16,7 +17,7 @@ class MinimalDataset:
         self.num_samples = num_samples
         # Create simple random images
         self.images = [
-            np.random.rand(size, size, 1).astype(np.float32)
+            np.random.rand(size, size, 3).astype(np.float32)
             for _ in range(num_samples)
         ]
         self.image_size = size
@@ -32,11 +33,28 @@ class MinimalDataset:
 class TestTensorFlowModel:
     """Test class for TensorFlow model."""
 
+    @pytest.fixture()
+    def minimal_model(self) -> TensorFlowDiffusionModelAdapter:
+        # Create model with minimal parameters
+        model = TensorFlowDiffusionModelAdapter(
+            image_size=28,
+            num_channels=3,
+            noise_embedding_size=16,  # Small embedding for speed
+            batch_size=5,
+            epochs=1,  # Just 1 epoch
+            plot_diffusion_steps=3  # Very few diffusion steps
+        )
+        return model
+
+    @pytest.fixture()
+    def minimal_dataset(self) -> Dataset:
+        return MinimalDataset(size=28, num_samples=10)
+
     def test_tensorflow_model_creation(self):
         """Test that the TensorFlow model can be created."""
         model = TensorFlowDiffusionModelAdapter(
             image_size=28,
-            num_channels=1,
+            num_channels=3,
             noise_embedding_size=32,
             batch_size=4,
             epochs=1,
@@ -46,57 +64,37 @@ class TestTensorFlowModel:
         assert model.image_size == 28
 
     @pytest.mark.filterwarnings("ignore:Your input ran out of data:UserWarning")
-    def test_tensorflow_model_training(self):
+    def test_tensorflow_model_training(self, minimal_model, minimal_dataset):
         """
         Test that the TensorFlow model trains without errors.
         Uses minimal dataset and parameters for fast execution.
         """
-        # Create minimal dataset
-        dataset = MinimalDataset(size=28, num_samples=10)
-
-        # Create model with minimal parameters
-        model = TensorFlowDiffusionModelAdapter(
-            image_size=28,
-            num_channels=1,
-            noise_embedding_size=16,  # Small embedding for speed
-            batch_size=5,
-            epochs=1,  # Just 1 epoch
-            plot_diffusion_steps=3  # Very few diffusion steps
-        )
-
         # Train should not raise errors
         try:
-            model.train(dataset)
+            minimal_model.train(minimal_dataset)
         except Exception as e:
             pytest.fail(f"Training failed with error: {e}")
 
     @pytest.mark.filterwarnings("ignore:Your input ran out of data:UserWarning")
-    def test_tensorflow_model_generation(self):
+    def test_tensorflow_model_generation(self, minimal_model, minimal_dataset):
         """
         Test that the TensorFlow model generates images with correct shape.
         """
         # Create and train model
         dataset = MinimalDataset(size=28, num_samples=10)
-        model = TensorFlowDiffusionModelAdapter(
-            image_size=28,
-            num_channels=1,
-            noise_embedding_size=16,
-            batch_size=5,
-            epochs=1,
-            plot_diffusion_steps=3
-        )
-        model.train(dataset)
+        minimal_model.train(minimal_dataset)
 
         # Generate a few images
         n_generated = 5
-        generated = model.generate_images(n=n_generated)
+        generated = minimal_model.generate_images(n=n_generated)
 
         # Check output is numpy array (Tensor protocol)
         assert isinstance(generated, np.ndarray), "Generated output should be numpy array"
 
         # Check shape
-        assert generated.shape == (n_generated, 28, 28, 1), \
-            f"Expected shape (5, 28, 28, 1), got {generated.shape}"
+        expected_shape = (n_generated, minimal_model.image_size, minimal_model.image_size, minimal_model.num_channels)
+        assert generated.shape == expected_shape, \
+            f"Expected shape {expected_shape}, got {generated.shape}"
 
     def test_tensorflow_model_implements_interface(self):
         """Verify that TensorFlowDiffusionModelAdapter implements Model interface."""
