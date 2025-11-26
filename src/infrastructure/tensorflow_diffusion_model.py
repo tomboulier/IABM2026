@@ -902,6 +902,14 @@ class TensorFlowDiffusionModelAdapter(Model):
         The final batch uses drop_remainder=True to avoid shape mismatches
         during XLA compilation.
         """
+        # Check that dataset size and num_channels are compatible
+        if dataset.image_size != self.image_size:
+            raise ValueError(f"Dataset image size {dataset.image_size} of dataset {dataset} "
+                             f"is not compatible with adapter image size {self.image_size}.")
+        if dataset.num_channels != self.num_channels:
+            raise ValueError(f"Dataset num_channels {dataset.num_channels} of dataset {dataset} "
+                             f"is not compatible with adapter num_channels {self.num_channels}.")
+        # Adapt domain Dataset to TensorFlow tf.data.Dataset
         tf_dataset = self.adapt_dataset_to_tensorflow(dataset)
 
         # Train the TensorFlow model
