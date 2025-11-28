@@ -527,7 +527,7 @@ class DiffusionModel(models.Model):
         return {m.name: m.result() for m in self.metrics}
 
 
-class TensorFlowDiffusionModelAdapter(Model):
+class TensorFlowDiffusionModel(Model):
     """
     Adapter that wraps TensorFlow DiffusionModel to implement domain Model interface.
 
@@ -559,7 +559,7 @@ class TensorFlowDiffusionModelAdapter(Model):
 
     Examples
     --------
-    >>> adapter = TensorFlowDiffusionModelAdapter(image_size=28, num_channels=1)
+    >>> adapter = TensorFlowDiffusionModel(image_size=28, num_channels=1)
     >>> adapter.train(my_dataset)
     >>> generated = adapter.generate_images(n=10)  # Returns numpy array
     """
@@ -684,7 +684,7 @@ class TensorFlowDiffusionModelAdapter(Model):
 
         Examples
         --------
-        >>> adapter = TensorFlowDiffusionModelAdapter(image_size=28, num_channels=1)
+        >>> adapter = TensorFlowDiffusionModel(image_size=28, num_channels=1)
         >>> adapter.train(dataset)
         >>> images = adapter.generate_images(n=5)
         >>> images.shape

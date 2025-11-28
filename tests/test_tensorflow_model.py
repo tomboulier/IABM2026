@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 from src.domain.entities.dataset import Dataset
-from src.infrastructure.tensorflow.diffusion_model import TensorFlowDiffusionModelAdapter
+from src.infrastructure.tensorflow.diffusion_model import TensorFlowDiffusionModel
 
 
 class MinimalDataset:
@@ -34,9 +34,9 @@ class TestTensorFlowModel:
     """Test class for TensorFlow model."""
 
     @pytest.fixture()
-    def minimal_model(self) -> TensorFlowDiffusionModelAdapter:
+    def minimal_model(self) -> TensorFlowDiffusionModel:
         # Create model with minimal parameters
-        model = TensorFlowDiffusionModelAdapter(
+        model = TensorFlowDiffusionModel(
             image_size=28,
             num_channels=3,
             noise_embedding_size=16,  # Small embedding for speed
@@ -52,7 +52,7 @@ class TestTensorFlowModel:
 
     def test_tensorflow_model_creation(self):
         """Test that the TensorFlow model can be created."""
-        model = TensorFlowDiffusionModelAdapter(
+        model = TensorFlowDiffusionModel(
             image_size=28,
             num_channels=3,
             noise_embedding_size=32,
@@ -100,7 +100,7 @@ class TestTensorFlowModel:
         """Verify that TensorFlowDiffusionModelAdapter implements Model interface."""
         from src.domain.interfaces.model import Model
 
-        model = TensorFlowDiffusionModelAdapter()
+        model = TensorFlowDiffusionModel()
         assert isinstance(model, Model), "Model should implement domain Model interface"
 
         # Check required methods exist
