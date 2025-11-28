@@ -1,3 +1,35 @@
+"""
+infrastructure.tensorflow.networks
+=================================
+
+Module providing small, focused TensorFlow / Keras building blocks and a
+U-Net factory used by the project's diffusion models.
+
+This module exposes:
+- block factories: `ResidualBlock`, `DownBlock`, `UpBlock` used to compose
+  the U-Net encoder/decoder.
+- `sinusoidal_embedding`: a registered Keras function producing time-step
+  embeddings for conditioning the network on diffusion timesteps.
+- `get_unet`: a convenience factory that builds and returns a Keras
+  Model implementing the U-Net used to predict noise.
+
+The implementation keeps Keras imports local to the module so other parts
+of the codebase do not pay the TensorFlow import cost when they don't need
+it.
+
+Examples
+--------
+>>> from infrastructure.tensorflow.networks import get_unet
+>>> model = get_unet(image_size=28, noise_embedding_size=64, num_channels=1)
+
+Notes
+-----
+This docstring follows the numpydoc style. The module is intentionally
+small and focused on model construction; dataset-specific concerns such as
+`image_size` and `num_channels` should live in dataset loader classes, not
+here (so the networks remain reusable across datasets).
+"""
+
 import math
 
 import tensorflow as tf
