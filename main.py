@@ -5,7 +5,7 @@ from src.infrastructure.configuration import ExperimentConfiguration
 from src.infrastructure.loaders import MedMNISTDatasetLoader
 from src.infrastructure.logging import setup_logging
 from src.infrastructure.metrics import FIDSimilarityMetric, ResNetMSDVariabilityMetric
-from src.infrastructure.tensorflow_diffusion_model import (
+from src.infrastructure.tensorflow.diffusion_model import (
     TensorFlowDiffusionModelAdapter,
 )
 
