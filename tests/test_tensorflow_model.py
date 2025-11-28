@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 from src.domain.entities.dataset import Dataset
-from src.infrastructure.tensorflow_diffusion_model import TensorFlowDiffusionModelAdapter
+from src.infrastructure.tensorflow.diffusion_model import TensorFlowDiffusionModelAdapter
 
 
 class MinimalDataset:
