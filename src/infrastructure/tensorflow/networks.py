@@ -30,6 +30,31 @@ small and focused on model construction; dataset-specific concerns such as
 here (so the networks remain reusable across datasets).
 """
 
+# -------------------------------------------------------------------------
+# Copyright 2025 Thomas Boulier
+#
+# This file contains code derived from the implementation in:
+# “Generative Deep Learning, 2nd Edition” by David Foster (O’Reilly).
+# Original source code (Apache License 2.0) available at:
+# https://github.com/davidADSP/Generative_Deep_Learning_2nd_Edition
+#
+# Modifications:
+# - Adapted to fit the architecture and coding style of this project.
+# - Added detailed docstrings and type annotations.
+# - Encapsulated Keras imports to avoid global dependency.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at:
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# -------------------------------------------------------------------------
+
+
 import math
 
 import tensorflow as tf
