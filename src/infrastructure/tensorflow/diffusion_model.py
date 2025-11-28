@@ -138,18 +138,21 @@ class TensorFlowDiffusionModel(Model):
 
         # Optional weight loading
         if load_weights_path is not None:
-            # Build the model implicitly by calling it once before loading weights
-            dummy_images = tf.zeros(
-                (1, image_size, image_size, num_channels), dtype=tf.float32
-            )
-            dummy_noise_var = tf.zeros((1, 1, 1, 1), dtype=tf.float32)
-            _ = self.network([dummy_images, dummy_noise_var])
-            self.network.load_weights(load_weights_path)
-            # Mirror weights to EMA network
-            for weight, ema_weight in zip(
-                    self.network.weights, self.ema_network.weights
-            ):
-                ema_weight.assign(weight)
+            self.load_weights(image_size, load_weights_path, num_channels)
+
+    def load_weights(self, image_size: int, load_weights_path: str, num_channels: int):
+        # Build the model implicitly by calling it once before loading weights
+        dummy_images = tf.zeros(
+            (1, image_size, image_size, num_channels), dtype=tf.float32
+        )
+        dummy_noise_var = tf.zeros((1, 1, 1, 1), dtype=tf.float32)
+        _ = self.network([dummy_images, dummy_noise_var])
+        self.network.load_weights(load_weights_path)
+        # Mirror weights to EMA network
+        for weight, ema_weight in zip(
+                self.network.weights, self.ema_network.weights
+        ):
+            ema_weight.assign(weight)
 
     # -------------------------------------------------------------------------
     # Public API (domain interface)
