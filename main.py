@@ -6,7 +6,7 @@ from src.infrastructure.loaders import MedMNISTDatasetLoader
 from src.infrastructure.logging import setup_logging
 from src.infrastructure.metrics import FIDSimilarityMetric, ResNetMSDVariabilityMetric
 from src.infrastructure.tensorflow.diffusion_model import (
-    TensorFlowDiffusionModelAdapter,
+    TensorFlowDiffusionModel,
 )
 
 
@@ -37,7 +37,7 @@ def main(config_path: str = None):
     dataset_loader = MedMNISTDatasetLoader()
     variability_metric = ResNetMSDVariabilityMetric()
     similarity_metric = FIDSimilarityMetric()
-    model = TensorFlowDiffusionModelAdapter(
+    model = TensorFlowDiffusionModel(
         image_size=config.image_size,
         num_channels=3,
     )
