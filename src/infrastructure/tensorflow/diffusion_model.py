@@ -13,6 +13,31 @@ Responsibilities
 - Returns generated images as numpy arrays (domain `Tensor` protocol)
 """
 
+# -------------------------------------------------------------------------
+# Copyright 2025 Thomas Boulier
+#
+# This file contains code derived from the implementation in:
+# “Generative Deep Learning, 2nd Edition” by David Foster (O’Reilly).
+# Original source code (Apache License 2.0) available at:
+# https://github.com/davidADSP/Generative_Deep_Learning_2nd_Edition
+#
+# Modifications:
+# - Adapted to fit a Clean Architecture design
+# - Removed keras.Model inheritance
+# - Added manual training loop and domain Model interface integration
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at:
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# -------------------------------------------------------------------------
+
+
 from __future__ import annotations
 
 from typing import Optional
@@ -72,12 +97,6 @@ class TensorFlowDiffusionModel(Model):
     - A manual TensorFlow training loop
     - Conversions from domain `Dataset` to `tf.data.Dataset`
       and from TensorFlow tensors to numpy arrays (domain `Tensor`)
-
-    Notes
-    -----
-    This class lives entirely in the infrastructure layer and is free to
-    depend on TensorFlow/Keras. The domain only sees the abstract `Model`
-    interface and remains framework-agnostic.
     """
 
     def __init__(
