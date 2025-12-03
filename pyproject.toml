@@ -1,13 +1,35 @@
 [project]
-name = "iabm2026"
+name = "medmnist-variability"
 version = "0.1.0"
-description = "Add your description here"
+description = "Comparing variability of MedMNIST datasets and similarity of generated images."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
-    "ipykernel>=7.1.0",
-    "matplotlib>=3.10.7",
-    "medmnist>=3.0.2",
-    "torch>=2.9.1",
-    "torchvision>=0.24.1",
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "medmnist>=3.0.0",
+    "scipy>=1.10.0",
+    "numpy>=1.24.0",
+    "tensorflow>=2.20.0",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+filterwarnings = [
+    "ignore::DeprecationWarning",  # Ignore numpy/keras compatibility warnings
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18.2",
+    "pytest>=9.0.1",
+    "tomli-w>=1.2.0",
+]
+

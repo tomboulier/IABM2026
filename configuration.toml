@@ -1,0 +1,4 @@
+[experiment]
+datasets = ["PathMNIST", "ChestMNIST", "DermaMNIST", "BloodMNIST"]
+max_samples = 10000
+image_size = 224
