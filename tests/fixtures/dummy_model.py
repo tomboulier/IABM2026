@@ -15,13 +15,22 @@ class DummyModel(Model):
     Doesn't do real training - just generates random noise.
     """
     def __init__(self):
+        """
+        Initialize DummyModel internal state.
+        
+        Sets `sample_data` to None (will hold the first sample from a dataset after training) and `is_trained` to False (indicates whether the model has been mock-trained).
+        """
         self.sample_data = None
         self.is_trained = False
 
     def train(self, dataset: Dataset):
         """
-        Mocks the training process.
-        Just stores a reference to understand data shape.
+        Mock-trains the model by recording the first sample from the dataset.
+        
+        Stores the dataset's first sample in self.sample_data, sets self.is_trained to True, and prints a confirmation message.
+        
+        Parameters:
+            dataset (Dataset): Source of training samples; the function reads dataset[0] and stores its first element (typically the input sample).
         """
         # Get first sample to understand shape
         self.sample_data, _ = dataset[0]
@@ -30,8 +39,16 @@ class DummyModel(Model):
 
     def generate_images(self, n: int = 1000) -> Tensor:
         """
-        Generates n images.
-        Returns a numpy array of random noise.
+        Generate a batch of synthetic images as random Gaussian noise using the training sample's shape.
+        
+        Parameters:
+            n (int): Number of images to generate (default 1000).
+        
+        Returns:
+            Tensor: NumPy array of random values. If the stored training sample has a `shape` attribute, that shape is used; when the shape has length 3 it is interpreted as (C, H, W) and the returned array has shape `(n, C, H, W)`, otherwise the returned array has shape `(n, *shape)`. If no sample shape is available, the default sample shape `(28, 28, 1)` is used.
+        
+        Raises:
+            RuntimeError: If the model has not been trained prior to generation.
         """
         if not self.is_trained:
             raise RuntimeError("Model must be trained before generation.")
