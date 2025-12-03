@@ -25,16 +25,16 @@ class Experiment:
         model: Model
     ):
         """
-        Initialize the experiment with dependencies.
+        Create an Experiment configured with datasets, loading/training components, and evaluation metrics.
         
-        Args:
-            datasets: List of dataset names to process
-            max_samples: Maximum samples per dataset
-            image_size: Image size for datasets
-            dataset_loader: Dataset loader implementation
-            variability_metric: Variability metric implementation
-            similarity_metric: Similarity metric implementation
-            model: Model implementation
+        Parameters:
+            datasets (list[str]): Names of datasets to process.
+            max_samples (int | None): Maximum number of samples to load per dataset, or None to use all samples.
+            image_size (int): Target image size (pixels) used when loading datasets.
+            dataset_loader (DatasetLoader): Component responsible for loading datasets.
+            variability_metric (VariabilityMetric): Component used to compute dataset variability.
+            similarity_metric (SimilarityMetric): Component used to compute similarity between real and generated data.
+            model (Model): Model used for training and image generation.
         """
         self.datasets = datasets
         self.max_samples = max_samples
@@ -45,7 +45,15 @@ class Experiment:
         self.model = model
         
     def load_dataset(self, dataset_name: str) -> Dataset:
-        """Load a dataset using the injected loader."""
+        """
+        Load a dataset by name using the configured dataset loader.
+        
+        Parameters:
+            dataset_name (str): Name of the dataset to load.
+        
+        Returns:
+            dataset (Dataset): Dataset loaded with this Experiment's `max_samples` limit and `image_size`.
+        """
         return self.dataset_loader.load(
             dataset_name,
             self.max_samples,
@@ -53,7 +61,15 @@ class Experiment:
         )
     
     def compute_variability(self, dataset: Dataset) -> float:
-        """Compute variability using the injected metric."""
+        """
+        Compute the variability of a dataset using the configured variability metric.
+        
+        Parameters:
+            dataset (Dataset): The dataset to evaluate.
+        
+        Returns:
+            float: Variability score for the dataset.
+        """
         return self.variability_metric.compute(dataset)
     
     def train_model(self, dataset: Dataset):
@@ -61,15 +77,36 @@ class Experiment:
         self.model.train(dataset)
     
     def generate_images(self, n: int = 100) -> Tensor:
-        """Generate images using the trained model."""
+        """
+        Generate a batch of images from the experiment's model.
+        
+        Parameters:
+            n (int): Number of images to generate.
+        
+        Returns:
+            Tensor: Tensor containing the generated images.
+        """
         return self.model.generate_images(n=n)
     
     def compute_similarity(self, dataset: Dataset, generated: Tensor) -> float:
-        """Compute similarity between real and generated data."""
+        """
+        Compute similarity between a real dataset and generated images using the configured similarity metric.
+        
+        Parameters:
+            dataset (Dataset): The real dataset to compare against.
+            generated (Tensor): Tensor of generated images to compare with the real dataset.
+        
+        Returns:
+            float: Similarity score produced by the configured similarity metric.
+        """
         return self.similarity_metric.compute(dataset, generated)
     
     def run(self):
-        """Run the complete experiment workflow."""
+        """
+        Orchestrate the full experiment pipeline across configured datasets.
+        
+        For each dataset name in self.datasets this method loads the dataset, computes its variability, trains the injected model, generates images, and computes similarity between real and generated samples. Progress and key results are logged. If processing a dataset raises an exception, the error is logged for that dataset and the exception is re-raised.
+        """
         logger.info("Starting MedMNIST Variability & Similarity Experiment")
         
         for dataset_name in self.datasets:

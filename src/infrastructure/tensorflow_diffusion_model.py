@@ -13,6 +13,15 @@ callbacks = keras.callbacks
 optimizers = keras.optimizers
 
 def ResidualBlock(width):
+    """
+    Create a residual convolutional block factory that produces an apply(x) callable.
+    
+    Parameters:
+        width (int): Number of output channels for the block.
+    
+    Returns:
+        apply (callable): A function that accepts a 4D tensor `x` (NHWC) and returns `x` transformed by a residual block: input channels are matched to `width` (via identity or a 1x1 convolution), then the main path applies BatchNormalization (center=False, scale=False), a 3x3 convolution with Swish activation, a second 3x3 convolution without activation, and finally adds the residual to the main path.
+    """
     def apply(x):
         input_width = x.shape[3]
         if input_width == width:
@@ -31,6 +40,18 @@ def ResidualBlock(width):
 
 
 def DownBlock(width, block_depth):
+    """
+    Create a downsampling block factory that returns a function applying repeated residual blocks and 2x2 average pooling.
+    
+    Parameters:
+        width (int): Number of output channels for each ResidualBlock.
+        block_depth (int): Number of consecutive ResidualBlock layers to apply before pooling.
+    
+    Returns:
+        apply (callable): A function that expects a tuple `(x, skips)` where `x` is a feature tensor and `skips` is a list.
+            The function applies `block_depth` ResidualBlock(width) layers to `x`, appends each block output to `skips`,
+            then applies 2x2 average pooling and returns the pooled tensor.
+    """
     def apply(x):
         x, skips = x
         for _ in range(block_depth):
@@ -43,6 +64,18 @@ def DownBlock(width, block_depth):
 
 
 def UpBlock(width, block_depth):
+    """
+    Create an upsampling block factory that returns a function applying upsampling, skip-connection merging, and ResidualBlock processing.
+    
+    The returned function expects a tuple (x, skips), where x is the current feature tensor and skips is a list (or stack) of skip-connection tensors. It upsamples x by a factor of 2 (bilinear), then for block_depth iterations pops a skip tensor, crops the skip if its spatial dimensions exceed x's, concatenates the skip with x along the channel axis, and applies a ResidualBlock of the specified width to the result.
+    
+    Parameters:
+        width (int): Number of output channels for each ResidualBlock in the upsampling path.
+        block_depth (int): Number of residual blocks (and corresponding skip merges) to perform after upsampling.
+    
+    Returns:
+        function: A callable that accepts (x, skips) and returns the processed feature tensor after upsampling, skip merging, and residual blocks.
+    """
     def apply(x):
         x, skips = x
         x = layers.UpSampling2D(size=2, interpolation="bilinear")(x)
@@ -65,6 +98,20 @@ def UpBlock(width, block_depth):
 
 @register_keras_serializable(package="diffusion")
 def sinusoidal_embedding(x, noise_embedding_size: int):
+    """
+    Compute sinusoidal positional embeddings for input diffusion times.
+    
+    Parameters:
+        x (tf.Tensor): Tensor of scalar diffusion times or noise scales. The input's spatial/batch
+            dimensions are preserved; embeddings vary along the last axis used for concatenation.
+    
+        noise_embedding_size (int): Total size of the output embedding; must be an even integer.
+    
+    Returns:
+        tf.Tensor: Tensor of sinusoidal embeddings where the last concatenation axis (axis 3)
+            has size `noise_embedding_size` and contains interleaved `sin` and `cos`
+            components for log-spaced frequencies between 1 and 1000.
+    """
     frequencies = tf.exp(
         tf.linspace(
             tf.math.log(1.0),
@@ -79,6 +126,17 @@ def sinusoidal_embedding(x, noise_embedding_size: int):
     return embeddings
 
 def get_unet(image_size: int, noise_embedding_size: int, num_channels: int = 1):
+    """
+    Builds a U‑Net conditioned on sinusoidal noise embeddings for use in a diffusion model.
+    
+    Parameters:
+        image_size (int): Spatial height and width of the model input and output.
+        noise_embedding_size (int): Dimension of the sinusoidal noise embedding used to condition the network.
+        num_channels (int): Number of channels for the input and output images.
+    
+    Returns:
+        unet (keras.Model): Keras Model that accepts two inputs `(noisy_images, noise_variances)` and produces denoised images with shape `(image_size, image_size, num_channels)`.
+    """
     noisy_images = layers.Input(shape=(image_size, image_size, num_channels))
 
     # Première projection des images
@@ -127,8 +185,15 @@ def get_unet(image_size: int, noise_embedding_size: int, num_channels: int = 1):
 
 def offset_cosine_diffusion_schedule(diffusion_times):
     """
-    Implements the cosine diffusion schedule with small offset to avoid
-    extremely small noise rates.
+    Compute noise and signal rates from diffusion times using a cosine schedule with a small offset.
+    
+    Parameters:
+        diffusion_times (tf.Tensor): Tensor of diffusion progression values, typically in the range [0, 1].
+    
+    Returns:
+        tuple: (noise_rates, signal_rates) where both are tf.Tensor values computed from the cosine schedule:
+            - noise_rates: sin of the scheduled angles (amount of noise).
+            - signal_rates: cos of the scheduled angles (amount of signal).
     """
     min_signal_rate = 0.02
     max_signal_rate = 0.95
@@ -171,30 +236,29 @@ class DiffusionModel(models.Model):
                  plot_diffusion_steps: int = 20,
                  learning_rate: float = 1e-4,
                  weight_decay: float = 1e-4,):
-        """Implements a diffusion model with a U-Net architecture.
-        
-
-        Parameters
-        ----------
-        image_size: int
-            The size of the input images (image_size x image_size).
-        num_channels: int
-            The number of channels in the input images (e.g., 3 for RGB, 1 for grayscale).
-        noise_embedding_size: int
-            The size of the noise embedding vector.
-        batch_size: int
-            The batch size for training.
-        ema: float
-            The exponential moving average factor for the model weights.
-        load_weights_path: str
-            Path to load pre-trained weights. If None, weights are initialized randomly.
-        plot_diffusion_steps: int
-            The number of diffusion steps to use when generating sample images.
-        learning_rate: float
-            The learning rate for the optimizer.
-        weight_decay: float
-            The weight decay for the optimizer.
         """
+                 Initialize the diffusion model, build its U‑Net and EMA copy, and configure training and callbacks.
+                 
+                 Parameters:
+                     image_size:
+                         Spatial size of input images (images are square: image_size x image_size).
+                     num_channels:
+                         Number of image channels (e.g., 3 for RGB).
+                     noise_embedding_size:
+                         Dimensionality of the sinusoidal noise embedding used to condition the U‑Net.
+                     batch_size:
+                         Default training batch size the model will be used with.
+                     ema:
+                         Exponential moving average decay factor applied to the EMA network weights.
+                     load_weights_path:
+                         Optional filesystem path to pre-trained weights to load; if None, weights are initialized.
+                     plot_diffusion_steps:
+                         Number of reverse-diffusion steps used when producing example/generated images.
+                     learning_rate:
+                         Learning rate used to configure the optimizer during training.
+                     weight_decay:
+                         Weight decay (L2) applied by the optimizer.
+                 """
         super().__init__()
         # parameters
         self.image_size = image_size
@@ -230,9 +294,22 @@ class DiffusionModel(models.Model):
         self.noise_loss_tracker = metrics.Mean(name="n_loss")
 
     def compile(self, **kwargs):
+        """
+        Configure the model for training by forwarding compilation arguments to the base Keras Model.
+        
+        Parameters:
+            **kwargs: Keyword arguments accepted by keras.models.Model.compile (for example `optimizer`, `loss`, `metrics`) which are passed through to the superclass implementation.
+        """
         super().compile(**kwargs)
 
     def build(self, input_shape):
+        """
+        Prepare the model for use by optionally loading weights and ensuring a dynamic batch dimension before calling the base build.
+        
+        Parameters:
+            input_shape (tuple|Sequence|tf.TensorShape): Shape or shape-like object describing the model inputs. If a tuple with a fixed batch size in the first position, that fixed size will be replaced with `None` to allow dynamic batch sizes.
+        
+        """
         if self.load_weights_path is not None:
             self.built = True
             self.load_weights(self.load_weights_path)
@@ -245,9 +322,12 @@ class DiffusionModel(models.Model):
 
     def fit(self, *args, **kwargs):
         """
-        Wrapper around keras.Model.fit that ensures our callbacks are attached.
-        Accepts the full flexible signature (x=None, y=None, batch_size=None, epochs=1, ...)
-        so it won't raise signature-mismatch warnings in static analysis.
+        Ensure the model's default callbacks are attached and delegate to keras.Model.fit.
+        
+        If the caller provides callbacks, they are combined with the model's configured callbacks; if the provided value is None or not iterable it is replaced by the model's callbacks. The remaining fit arguments are passed through unchanged.
+        
+        Returns:
+            History: Keras `History` object containing training metrics and state.
         """
         provided_callbacks = kwargs.get("callbacks")
         if provided_callbacks is None:
@@ -263,6 +343,15 @@ class DiffusionModel(models.Model):
         return super().fit(*args, **kwargs)
 
     def train(self, dataset: tf.data.Dataset, epochs: int = 1):
+        """
+        Train the diffusion model on a TensorFlow dataset for a specified number of epochs.
+        
+        The method adapts the model's input normalizer to the provided dataset, compiles the model with the configured optimizer and loss, builds the model with the configured input shape, and runs training.
+        
+        Parameters:
+            dataset (tf.data.Dataset): A TensorFlow dataset that yields image batches suitable for training.
+            epochs (int): Number of epochs to train the model for (default: 1).
+        """
         self.normalizer.adapt(dataset)
         self.compile(
             optimizer=optimizers.AdamW(
@@ -275,13 +364,42 @@ class DiffusionModel(models.Model):
 
     @property
     def metrics(self):
+        """
+        Expose the model's tracked metrics for Keras monitoring.
+        
+        Returns:
+            A list containing the Mean metric that tracks the model's noise prediction loss.
+        """
         return [self.noise_loss_tracker]
 
     def denormalize(self, images):
+        """
+        Restore images from the normalizer's original scale using stored mean and variance, then clip values to the [0, 1] range.
+        
+        Parameters:
+            images: Tensor or array of normalized image values (zero-centered using the model's normalizer).
+        
+        Returns:
+            Tensor of denormalized image values, clipped so every element is between 0.0 and 1.0.
+        """
         images = self.normalizer.mean + images * self.normalizer.variance**0.5
         return tf.clip_by_value(images, 0.0, 1.0)
 
     def denoise(self, noisy_images, noise_rates, signal_rates, training):
+        """
+        Predicts the noise component and corresponding denoised images for given noisy inputs, using the training network or the EMA network when not training.
+        
+        Parameters:
+            noisy_images: Tensor of noisy images to denoise.
+            noise_rates: Tensor of noise rate scalars applied to the inputs (same shape or broadcastable to noisy_images).
+            signal_rates: Tensor of signal rate scalars used to reconstruct images (same shape or broadcastable to noisy_images).
+            training (bool): If True, use the model's training network; if False, use the EMA (exponential moving average) network.
+        
+        Returns:
+            (pred_noises, pred_images): 
+                pred_noises — Tensor of noise predictions for each input.
+                pred_images — Tensor of reconstructed (denoised) images computed from the predictions.
+        """
         if training:
             network = self.network
         else:
@@ -295,6 +413,16 @@ class DiffusionModel(models.Model):
 
     def reverse_diffusion(self, initial_noise, diffusion_steps):
         # Handle edge case where diffusion_steps <= 0: return initial noise directly
+        """
+        Perform iterative reverse diffusion to denoise a batch of images starting from given noise.
+        
+        Parameters:
+            initial_noise (tf.Tensor): Batch of noisy images to start from, shape (batch, height, width, channels).
+            diffusion_steps (int): Number of discrete reverse diffusion steps to run; if <= 0, returns `initial_noise` unchanged.
+        
+        Returns:
+            tf.Tensor: Final denoised images after running the reverse diffusion loop, same spatial/channel shape as `initial_noise`.
+        """
         if diffusion_steps <= 0:
             return initial_noise
 
@@ -321,6 +449,17 @@ class DiffusionModel(models.Model):
         return pred_images
 
     def generate(self, num_images, diffusion_steps, initial_noise=None):
+        """
+        Generate images by running the reverse diffusion process from an initial noise tensor.
+        
+        Parameters:
+            num_images (int): Number of images to generate when `initial_noise` is not provided.
+            diffusion_steps (int): Number of reverse diffusion steps to run.
+            initial_noise (array-like or tf.Tensor, optional): If provided, must have shape (N, H, W, C); converted to float32 and used as the starting noise. When provided, `num_images` is ignored and N is used instead.
+        
+        Returns:
+            tf.Tensor: Denormalized generated images with values clipped to [0, 1] and shape (N, H, W, C).
+        """
         if initial_noise is None:
             initial_noise = tf.random.normal(
                 shape=(num_images, self.image_size, self.image_size, self.num_channels),
@@ -341,6 +480,15 @@ class DiffusionModel(models.Model):
 
     def train_step(self, images):
         # Determine runtime batch size from the input tensor
+        """
+        Performs a single training step on a batch of images, updating the network weights, exponential moving average (EMA) weights, and tracked metrics.
+        
+        Parameters:
+            images (tf.Tensor): Batch of input images with shape (batch_size, image_size, image_size, num_channels).
+        
+        Returns:
+            dict: Mapping of metric names to their current values after the step.
+        """
         batch_size = tf.shape(images)[0]
         images = self.normalizer(images, training=True)
         noises = tf.random.normal(shape=(batch_size, self.image_size, self.image_size, self.num_channels))
@@ -375,6 +523,15 @@ class DiffusionModel(models.Model):
         return {m.name: m.result() for m in self.metrics}
 
     def test_step(self, images):
+        """
+        Performs a single evaluation step on a batch of images and updates the tracked noise loss metric.
+        
+        Parameters:
+            images (tf.Tensor): Batch of input images, shape (batch_size, image_size, image_size, num_channels) or a shape broadcast-compatible with the model; dtype float32.
+        
+        Returns:
+            dict: Mapping from metric names to their current scalar values (e.g., the noise loss).
+        """
         batch_size = tf.shape(images)[0]
         images = self.normalizer(images, training=False)
         noises = tf.random.normal(shape=(batch_size, self.image_size, self.image_size, self.num_channels))
@@ -426,10 +583,19 @@ class TensorFlowDiffusionModelAdapter(Model):
                  weight_decay: float = 1e-4,
                  epochs: int = 1):
         """
-        Initialize TensorFlow diffusion model adapter.
-        
-        Parameters match the underlying TensorFlow model.
-        """
+                 Adapter constructor that configures and instantiates a TensorFlow DiffusionModel for training and generation.
+                 
+                 Parameters:
+                     image_size (int): Height/width of square images the model will process.
+                     num_channels (int): Number of image channels (e.g., 1 for grayscale, 3 for RGB).
+                     noise_embedding_size (int): Dimensionality of the sinusoidal noise embedding used by the U-Net.
+                     batch_size (int): Default training batch size used when building the underlying model.
+                     ema (float): Exponential moving average decay applied to the model weights for the EMA network.
+                     plot_diffusion_steps (int): Number of diffusion steps used when generating example images for inspection.
+                     learning_rate (float): Initial learning rate for the optimizer.
+                     weight_decay (float): Weight decay (L2) applied by the optimizer.
+                     epochs (int): Number of training epochs the adapter will run when training via its train() method.
+                 """
         self.image_size = image_size
         self.num_channels = num_channels
         self.epochs = epochs
@@ -449,9 +615,12 @@ class TensorFlowDiffusionModelAdapter(Model):
     
     def train(self, dataset: Dataset):
         """
-        Train the model on a dataset.
+        Train the adapter's underlying TensorFlow diffusion model using a domain Dataset.
         
-        Adapts from domain Dataset protocol to TensorFlow dataset.
+        Converts the provided domain Dataset (which should yield images or (image, label) tuples) into a tf.data.Dataset with shape (image_size, image_size, num_channels), batches it using the adapter's configured batch size (dropping a final partial batch), adds standard prefetching, and then calls the underlying TensorFlow model's train method for the adapter's configured number of epochs.
+        
+        Parameters:
+            dataset (Dataset): A domain-level Dataset implementing sequence access (len and indexing) that yields image arrays or (image, label) pairs. Images may be NumPy arrays, framework tensors (e.g., PyTorch), or array-like objects; they will be converted to float32 and reshaped to (H, W, C) as needed.
         """
         # Convert domain Dataset to TensorFlow dataset
         # Assuming the dataset already has the right format (PyTorch or TensorFlow)
@@ -459,6 +628,19 @@ class TensorFlowDiffusionModelAdapter(Model):
 
         # Create a TensorFlow dataset from the protocol-based dataset
         def generator():
+            """
+            Yield preprocessed images from the outer `dataset` ready for batching by a TensorFlow Dataset.
+            
+            Each yielded item is a NumPy float32 image array with shape (H, W, C). The generator:
+            - Accepts dataset items that are images or (image, label) pairs and extracts the image.
+            - Converts PyTorch tensors to NumPy arrays if they expose `cpu()` and `numpy()` methods.
+            - Ensures dtype is `float32`.
+            - Reorders channels from (C, H, W) to (H, W, C) when the first dimension matches `self.num_channels`.
+            - Adds a channel axis for single-channel images (2D arrays).
+            
+            Returns:
+                numpy.ndarray: A single image array of shape (H, W, C) and dtype `float32` for each yield.
+            """
             for i in range(len(dataset)):
                 item = dataset[i]
                 # Support dataset returning (image, label) or image alone
@@ -509,10 +691,10 @@ class TensorFlowDiffusionModelAdapter(Model):
     
     def generate_images(self, n: int) -> Tensor:
         """
-        Generate images using the trained model.
+        Generate a batch of images using the trained diffusion model.
         
-        Returns numpy arrays (implements Tensor protocol) instead of TensorFlow tensors.
-        This is the boundary conversion - TensorFlow → numpy.
+        Returns:
+            A NumPy array of generated images with shape (n, image_size, image_size, num_channels) and dtype float32; pixel values are in the range [0, 1].
         """
         # Generate using TensorFlow model
         generated_tf = self.tf_model.generate(

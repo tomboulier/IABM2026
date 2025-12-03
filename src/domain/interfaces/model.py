@@ -9,23 +9,22 @@ class Model(ABC):
     @abstractmethod
     def train(self, dataset: Dataset):
         """
-        Train the model on a dataset.
+        Train the model using the provided dataset.
         
-        Args:
-            dataset: Training dataset
+        Parameters:
+            dataset (Dataset): Dataset to use for training the model.
         """
         pass
     
     @abstractmethod
     def generate_images(self, n: int) -> Tensor:
         """
-        Generate images using the trained model.
+        Generate a batch of images from the trained model.
         
-        Args:
-            n: Number of images to generate
-            
+        Parameters:
+            n (int): Number of images to generate.
+        
         Returns:
-            Generated images tensor
+            Tensor: Tensor containing the generated images.
         """
         pass
-

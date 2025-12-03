@@ -10,6 +10,18 @@ class MinimalDataset:
     Creates 10 simple grayscale images.
     """
     def __init__(self, size=28, num_samples=10):
+        """
+        Initialize the minimal dataset with a fixed number of random grayscale images.
+        
+        Parameters:
+        	size (int): Height and width of each generated square image (default 28).
+        	num_samples (int): Number of images to generate (default 10).
+        
+        Attributes:
+        	size (int): The image height/width.
+        	num_samples (int): The number of samples in the dataset.
+        	images (list[np.ndarray]): List of `num_samples` random float32 arrays shaped (size, size, 1).
+        """
         self.size = size
         self.num_samples = num_samples
         # Create simple random images
@@ -19,9 +31,24 @@ class MinimalDataset:
         ]
     
     def __len__(self):
+        """
+        Return the number of samples available in the dataset.
+        
+        Returns:
+            int: The total number of samples.
+        """
         return self.num_samples
     
     def __getitem__(self, idx):
+        """
+        Return the dataset item (image and dummy label) at the given index.
+        
+        Parameters:
+            idx (int): Index of the sample to retrieve.
+        
+        Returns:
+            tuple: A pair (image, label) where `image` is a float32 NumPy array with shape (size, size, 1) and `label` is the integer `0` (dummy label).
+        """
         return self.images[idx], 0  # image, dummy label
 
 

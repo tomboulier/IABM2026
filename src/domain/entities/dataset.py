@@ -7,9 +7,22 @@ class Dataset(Protocol):
     """Framework-independent dataset abstraction."""
     
     def __len__(self) -> int:
-        """Return the number of items in the dataset."""
+        """
+        Get the number of items in the dataset.
+        
+        Returns:
+            int: The total number of items.
+        """
         ...
     
     def __getitem__(self, idx: int) -> tuple[Any, Any]:
-        """Get an item and its label from the dataset."""
+        """
+        Retrieve the item and its label at the given index.
+        
+        Parameters:
+            idx (int): Index of the dataset entry to retrieve.
+        
+        Returns:
+            tuple[Any, Any]: A tuple (item, label) for the specified index.
+        """
         ...

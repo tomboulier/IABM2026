@@ -11,15 +11,15 @@ from src.domain.entities.dataset import Dataset
 
 def load_dataset(name: str, max_samples: int | None = None, image_size: int = 224) -> Dataset:
     """
-    Loads a MedMNIST dataset by name.
+    Load a MedMNIST training dataset by dataset key.
     
-    Args:
-        name: The name of the dataset (e.g., 'ChestMNIST').
-        max_samples: Optional limit on the number of samples to load.
-        image_size: The size to resize images to (default: 224).
-        
+    Parameters:
+        name (str): Dataset key from medmnist.INFO (case-insensitive).
+        max_samples (int | None): Optional maximum number of samples to include; when set the returned dataset is a Subset limited to this count.
+        image_size (int): Target image height and width in pixels used to resize returned images.
+    
     Returns:
-        A PyTorch Dataset containing the training split.
+        Dataset: A PyTorch Dataset for the training split. Images in the returned dataset are resized to `image_size` and normalized for model compatibility; if `max_samples` is provided the dataset is wrapped in a Subset limited to that many samples.
     """
     name = name.lower()
     if name not in INFO:

@@ -14,13 +14,16 @@ class ExperimentConfiguration:
     @classmethod
     def load(cls, config_path: str) -> "ExperimentConfiguration":
         """
-        Loads the configuration from a TOML file.
+        Load experiment configuration from a TOML file.
         
-        Args:
-            config_path: Path to the configuration file.
-            
+        Parameters:
+            config_path (str): Filesystem path to a TOML file containing an "experiment" table.
+        
         Returns:
-            An instance of ExperimentConfiguration.
+            ExperimentConfiguration: Instance populated from the "experiment" table; fields not present use their dataclass defaults.
+        
+        Raises:
+            FileNotFoundError: If no file exists at `config_path`.
         """
         if not os.path.exists(config_path):
             raise FileNotFoundError(f"Configuration file not found at {config_path}")

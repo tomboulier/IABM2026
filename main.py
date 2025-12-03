@@ -10,6 +10,11 @@ from src.infrastructure.tensorflow_diffusion_model import (
 
 def main():
     # 1. Setup Logging
+    """
+    Bootstrap and execute the experiment pipeline using the project's configuration and concrete dependencies.
+    
+    Loads configuration from "configuration.toml", sets up logging, instantiates the dataset loader, metrics, and model adapter with configuration-driven parameters, constructs an Experiment with those dependencies and configuration values, and runs the experiment.
+    """
     setup_logging()
     
     # 2. Load Configuration

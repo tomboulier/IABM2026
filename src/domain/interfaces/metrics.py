@@ -9,13 +9,13 @@ class VariabilityMetric(ABC):
     @abstractmethod
     def compute(self, dataset: Dataset) -> float:
         """
-        Compute variability metric for a dataset.
+        Compute a scalar variability score for the given dataset.
         
-        Args:
-            dataset: Dataset to compute variability for
-            
+        Parameters:
+            dataset (Dataset): The dataset to evaluate.
+        
         Returns:
-            Variability score
+            float: Variability score where larger values indicate greater variability.
         """
         pass
 
@@ -26,14 +26,13 @@ class SimilarityMetric(ABC):
     @abstractmethod
     def compute(self, real_dataset: Dataset, generated: Tensor) -> float:
         """
-        Compute similarity between real and generated data.
+        Compute how similar generated data is to a real dataset.
         
-        Args:
-            real_dataset: Real dataset
-            generated: Generated images tensor
-            
+        Parameters:
+            real_dataset (Dataset): The real dataset to compare against.
+            generated (Tensor): The generated data tensor to evaluate.
+        
         Returns:
-            Similarity score
+            float: Similarity score; higher values indicate greater similarity.
         """
         pass
-

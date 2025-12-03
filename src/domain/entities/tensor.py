@@ -8,5 +8,10 @@ class Tensor(Protocol):
     
     @property
     def shape(self) -> tuple[int, ...]:
-        """Return the shape of the tensor."""
+        """
+        Get the tensor's shape.
+        
+        Returns:
+            shape (tuple[int, ...]): Tuple of integers representing the size of each dimension.
+        """
         ...
