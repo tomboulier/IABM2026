@@ -48,6 +48,7 @@ from tensorflow import keras
 from src.domain.entities.dataset import Dataset
 from src.domain.entities.tensor import Tensor
 from src.domain.interfaces.model import Model
+from src.domain.interfaces.training_tracker import TrainingTracker
 from src.infrastructure.tensorflow.dataset_adapter import TensorFlowDatasetAdapter
 from src.infrastructure.tensorflow.networks import get_unet
 from src.infrastructure.tensorflow.utils import offset_cosine_diffusion_schedule
@@ -81,6 +82,7 @@ class TensorFlowDiffusionModel(Model):
             weight_decay: float = 1e-4,
             epochs: int = 1,
             load_weights_path: Optional[str] = None,
+            tracker: Optional[TrainingTracker] = None,
     ) -> None:
         """
         Initialize the TensorFlow diffusion model.
@@ -107,6 +109,8 @@ class TensorFlowDiffusionModel(Model):
             Number of training epochs. Default is 1.
         load_weights_path : str, optional
             Optional path to weights file for the U-Net.
+        tracker : TrainingTracker, optional
+            Optional tracker for training progress and metrics.
         """
         self.image_size = image_size
         self.num_channels = num_channels
@@ -114,6 +118,7 @@ class TensorFlowDiffusionModel(Model):
         self.ema = ema
         self.plot_diffusion_steps = plot_diffusion_steps
         self.epochs = epochs
+        self.tracker = tracker
 
         # Network and EMA copy
         self.network = get_unet(
@@ -158,7 +163,7 @@ class TensorFlowDiffusionModel(Model):
     # Public API (domain interface)
     # -------------------------------------------------------------------------
 
-    def train(self, dataset: Dataset) -> None:
+    def train(self, dataset: Dataset, dataset_name: str | None = None) -> None:
         """
         Train the diffusion model on a domain Dataset.
 
@@ -166,6 +171,8 @@ class TensorFlowDiffusionModel(Model):
         ----------
         dataset : Dataset
             Dataset implementing the domain `Dataset` protocol.
+        dataset_name : str | None, optional
+            Name of the dataset (for tracking/logging purposes).
         """
         # Basic compatibility checks with domain dataset
         if dataset.image_size != self.image_size:
@@ -188,10 +195,39 @@ class TensorFlowDiffusionModel(Model):
         # Adapt normalizer statistics on the full dataset
         self.normalizer.adapt(tf_dataset)
 
+        # Calculate total batches for progress tracking
+        total_batches = len(dataset) // self.batch_size
+        if len(dataset) % self.batch_size != 0:
+            total_batches += 1
+
+        # Notify tracker of training start
+        if self.tracker is not None:
+            self.tracker.on_training_start(
+                total_epochs=self.epochs,
+                total_batches=total_batches,
+                dataset_name=dataset_name,
+            )
+
         # Training loop
-        for _ in range(self.epochs):
-            for images in tf_dataset:
-                self._train_on_batch(images)
+        for epoch in range(self.epochs):
+            if self.tracker is not None:
+                self.tracker.on_epoch_start(epoch)
+
+            epoch_losses = []
+            for batch_idx, images in enumerate(tf_dataset):
+                loss = self._train_on_batch(images)
+                epoch_losses.append(float(loss))
+
+                if self.tracker is not None:
+                    self.tracker.on_batch_end(epoch, batch_idx, float(loss))
+
+            avg_loss = sum(epoch_losses) / len(epoch_losses) if epoch_losses else 0.0
+            if self.tracker is not None:
+                self.tracker.on_epoch_end(epoch, avg_loss)
+
+        # Notify tracker of training end
+        if self.tracker is not None:
+            self.tracker.on_training_end()
 
     def generate_images(self, n: int) -> Tensor:
         """

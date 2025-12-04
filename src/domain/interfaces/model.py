@@ -7,12 +7,16 @@ class Model(ABC):
     """Abstract interface for generative models."""
     
     @abstractmethod
-    def train(self, dataset: Dataset):
+    def train(self, dataset: Dataset, dataset_name: str | None = None) -> None:
         """
         Train the model using the provided dataset.
-        
-        Parameters:
-            dataset (Dataset): Dataset to use for training the model.
+
+        Parameters
+        ----------
+        dataset : Dataset
+            Dataset to use for training the model.
+        dataset_name : str | None, optional
+            Name of the dataset (for tracking/logging purposes).
         """
         pass
     
