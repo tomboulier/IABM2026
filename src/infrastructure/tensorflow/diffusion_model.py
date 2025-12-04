@@ -219,6 +219,30 @@ class TensorFlowDiffusionModel(Model):
         generated = self._denormalize(generated)
         return generated.numpy()
 
+    def save(self, path: str) -> None:
+        """
+        Save the model weights to disk.
+
+        Saves the EMA (Exponential Moving Average) network weights,
+        which are used for generation and typically produce better results.
+
+        Parameters
+        ----------
+        path : str
+            Path where the model weights will be saved.
+            Should end with '.weights.h5' for Keras compatibility.
+        """
+        # Build network if not already built
+        if not self.ema_network.built:
+            dummy_images = tf.zeros(
+                (1, self.image_size, self.image_size, self.num_channels),
+                dtype=tf.float32,
+            )
+            dummy_noise_var = tf.zeros((1, 1, 1, 1), dtype=tf.float32)
+            _ = self.ema_network([dummy_images, dummy_noise_var])
+
+        self.ema_network.save_weights(path)
+
     # -------------------------------------------------------------------------
     # Internal helpers: denoising and diffusion
     # -------------------------------------------------------------------------
