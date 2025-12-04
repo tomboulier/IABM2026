@@ -20,11 +20,23 @@ class Model(ABC):
     def generate_images(self, n: int) -> Tensor:
         """
         Generate a batch of images from the trained model.
-        
+
         Parameters:
             n (int): Number of images to generate.
-        
+
         Returns:
             Tensor: Tensor containing the generated images.
+        """
+        pass
+
+    @abstractmethod
+    def save(self, path: str) -> None:
+        """
+        Save the trained model to disk.
+
+        Parameters
+        ----------
+        path : str
+            Path where the model weights will be saved.
         """
         pass
