@@ -2,8 +2,6 @@
 import os
 import tempfile
 
-import pytest
-
 from src.domain.interfaces.model import Model
 
 
