@@ -128,15 +128,13 @@ class TensorFlowDiffusionModel(Model):
         )
         self.ema_network = keras.models.clone_model(self.network)
 
-        # Normalizer (channel-last) with default values for [0, 1] images
-        # These defaults will be overwritten during training via adapt()
-        self.normalizer = layers.Normalization(
-            axis=-1,
-            mean=0.5,
-            variance=0.0625,  # (0.25)^2 for images in [0, 1]
-        )
-        # Build the normalizer to initialize mean/variance attributes
-        self.normalizer(tf.zeros((1, image_size, image_size, num_channels)))
+        # Normalizer (channel-last) - will be adapted during training
+        self.normalizer = layers.Normalization(axis=-1)
+        # Default values for generation without training (images in [0, 1])
+        self._default_mean = 0.5
+        self._default_std = 0.25
+        # Track if normalizer has been adapted
+        self._normalizer_adapted = False
 
         # Optimizer and loss
         self.optimizer = optimizers.AdamW(
@@ -201,6 +199,7 @@ class TensorFlowDiffusionModel(Model):
 
         # Adapt normalizer statistics on the full dataset
         self.normalizer.adapt(tf_dataset)
+        self._normalizer_adapted = True
 
         # Calculate total batches for progress tracking
         total_batches = len(dataset) // self.batch_size
@@ -317,7 +316,14 @@ class TensorFlowDiffusionModel(Model):
         tf.Tensor
             Images clipped to [0, 1].
         """
-        images = self.normalizer.mean + images * tf.sqrt(self.normalizer.variance)
+        if self._normalizer_adapted:
+            mean = self.normalizer.mean
+            std = tf.sqrt(self.normalizer.variance)
+        else:
+            # Use default values for generation without prior training
+            mean = self._default_mean
+            std = self._default_std
+        images = mean + images * std
         return tf.clip_by_value(images, 0.0, 1.0)
 
     def _denoise(
