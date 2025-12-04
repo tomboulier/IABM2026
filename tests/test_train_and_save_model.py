@@ -71,7 +71,9 @@ class TestTrainAndSaveModel:
             )
             use_case.run()
 
-            mock_model.train.assert_called_once_with(mock_dataset)
+            mock_model.train.assert_called_once_with(
+                mock_dataset, dataset_name="PathMNIST"
+            )
 
     def test_run_saves_model_after_training(self):
         """
@@ -119,8 +121,8 @@ class TestTrainAndSaveModel:
         )[1]
 
         mock_model = MagicMock(spec=Model)
-        mock_model.train.side_effect = lambda *args: call_order.append("train")
-        mock_model.save.side_effect = lambda *args: call_order.append("save")
+        mock_model.train.side_effect = lambda *args, **kwargs: call_order.append("train")
+        mock_model.save.side_effect = lambda *args, **kwargs: call_order.append("save")
 
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = os.path.join(tmpdir, "model.weights.h5")

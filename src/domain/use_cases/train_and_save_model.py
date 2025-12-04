@@ -89,7 +89,7 @@ class TrainAndSaveModel:
         logger.info(f"Loaded {len(dataset)} samples.")
 
         logger.info(f"Training model on {self.dataset_name}...")
-        self.model.train(dataset)
+        self.model.train(dataset, dataset_name=self.dataset_name)
         logger.info("Training completed.")
 
         logger.info(f"Saving model to {self.output_path}...")

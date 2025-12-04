@@ -8,6 +8,14 @@ Usage:
 import argparse
 import os
 
+# Suppress TensorFlow logging before importing TF
+from src.infrastructure.tensorflow.observability import (
+    ConsoleTracker,
+    suppress_tensorflow_logging,
+)
+
+suppress_tensorflow_logging()
+
 from src.domain.use_cases.train_and_save_model import TrainAndSaveModel
 from src.infrastructure.loaders import MedMNISTDatasetLoader
 from src.infrastructure.logging import setup_logging
@@ -89,11 +97,13 @@ def main(argv=None):
 
     # Instantiate dependencies
     dataset_loader = MedMNISTDatasetLoader()
+    tracker = ConsoleTracker()
     model = TensorFlowDiffusionModel(
         image_size=args.image_size,
         num_channels=3,  # MedMNIST datasets are converted to RGB
         epochs=args.epochs,
         batch_size=args.batch_size,
+        tracker=tracker,
     )
 
     # Create and run use-case
