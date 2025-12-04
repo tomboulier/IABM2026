@@ -141,3 +141,29 @@ class TestTrainAndSaveModel:
                 f"Operations should happen in order: load, train, save. "
                 f"Got: {call_order}"
             )
+
+    def test_run_raises_if_output_path_invalid(self):
+        """
+        Running the use-case should raise ValueError if output path
+        does not end with '.weights.h5'.
+        """
+        from src.domain.use_cases.train_and_save_model import TrainAndSaveModel
+
+        mock_loader = MagicMock(spec=DatasetLoader)
+        mock_model = MagicMock(spec=Model)
+
+        use_case = TrainAndSaveModel(
+            dataset_name="PathMNIST",
+            max_samples=100,
+            image_size=28,
+            dataset_loader=mock_loader,
+            model=mock_model,
+            output_path="/tmp/bad_path.weights.h",  # Missing '5'
+        )
+
+        with pytest.raises(ValueError, match="must end with '.weights.h5'"):
+            use_case.run()
+
+        # Ensure no training happened
+        mock_loader.load.assert_not_called()
+        mock_model.train.assert_not_called()
