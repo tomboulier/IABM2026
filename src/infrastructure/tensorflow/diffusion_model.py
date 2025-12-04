@@ -128,8 +128,15 @@ class TensorFlowDiffusionModel(Model):
         )
         self.ema_network = keras.models.clone_model(self.network)
 
-        # Normalizer (channel-last)
-        self.normalizer = layers.Normalization(axis=-1)
+        # Normalizer (channel-last) with default values for [0, 1] images
+        # These defaults will be overwritten during training via adapt()
+        self.normalizer = layers.Normalization(
+            axis=-1,
+            mean=0.5,
+            variance=0.0625,  # (0.25)^2 for images in [0, 1]
+        )
+        # Build the normalizer to initialize mean/variance attributes
+        self.normalizer(tf.zeros((1, image_size, image_size, num_channels)))
 
         # Optimizer and loss
         self.optimizer = optimizers.AdamW(
@@ -278,6 +285,19 @@ class TensorFlowDiffusionModel(Model):
             _ = self.ema_network([dummy_images, dummy_noise_var])
 
         self.ema_network.save_weights(path)
+
+    def load(self, path: str) -> None:
+        """
+        Load model weights from disk.
+
+        Loads weights into both the main network and the EMA network.
+
+        Parameters
+        ----------
+        path : str
+            Path to the saved model weights file.
+        """
+        self.load_weights(self.image_size, path, self.num_channels)
 
     # -------------------------------------------------------------------------
     # Internal helpers: denoising and diffusion
