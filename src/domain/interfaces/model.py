@@ -44,3 +44,15 @@ class Model(ABC):
             Path where the model weights will be saved.
         """
         pass
+
+    @abstractmethod
+    def load(self, path: str) -> None:
+        """
+        Load model weights from disk.
+
+        Parameters
+        ----------
+        path : str
+            Path to the saved model weights file.
+        """
+        pass
