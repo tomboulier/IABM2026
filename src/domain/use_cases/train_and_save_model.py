@@ -37,7 +37,7 @@ class TrainAndSaveModel:
         Model to train and save.
     output_path : str
         Path where the trained model weights will be saved.
-    model_handler : ModelHandler | None
+    model_handler : Optional[ModelHandler]
         Optional handler for model persistence operations.
         If provided, validates the output path before training and
         uses handler.save() instead of model.save().

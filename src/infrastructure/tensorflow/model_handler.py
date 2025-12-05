@@ -63,7 +63,13 @@ class TensorFlowModelHandler(ModelHandler):
         ----------
         path : str
             Path where the model weights will be saved.
+
+        Raises
+        ------
+        ValueError
+            If the path does not end with '.weights.h5'.
         """
+        self.validate_save_path(path)
         self.model.save(path)
 
     def load(self, path: str) -> None:

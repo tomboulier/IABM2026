@@ -34,9 +34,9 @@ class GenerateAndSaveImages:
         Number of images to generate.
     output_dir : str
         Directory where generated images will be saved.
-    weights_path : str | None
+    weights_path : Optional[str]
         Optional path to model weights to load before generation.
-    model_handler : ModelHandler | None
+    model_handler : Optional[ModelHandler]
         Optional handler for model persistence operations.
     """
 
