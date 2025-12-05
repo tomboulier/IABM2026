@@ -202,9 +202,8 @@ class TensorFlowDiffusionModel(Model):
         self._normalizer_adapted = True
 
         # Calculate total batches for progress tracking
+        # Note: drop_remainder=True in adapter means incomplete batches are dropped
         total_batches = len(dataset) // self.batch_size
-        if len(dataset) % self.batch_size != 0:
-            total_batches += 1
 
         # Notify tracker of training start
         if self.tracker is not None:
