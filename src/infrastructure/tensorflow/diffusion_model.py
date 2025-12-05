@@ -229,6 +229,9 @@ class TensorFlowDiffusionModel(Model):
             avg_loss = sum(epoch_losses) / len(epoch_losses) if epoch_losses else 0.0
             if self.tracker is not None:
                 self.tracker.on_epoch_end(epoch, avg_loss)
+                # Generate sample images for visualization
+                sample_images = self.generate_images(5)
+                self.tracker.on_epoch_end_images(epoch, sample_images)
 
         # Notify tracker of training end
         if self.tracker is not None:

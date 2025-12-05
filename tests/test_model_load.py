@@ -36,7 +36,7 @@ class TestTensorFlowDiffusionModelLoad:
 
         # Create and save a model
         model1 = TensorFlowDiffusionModel(
-            image_size=28,
+            image_size=64,
             num_channels=3,
             epochs=1,
         )
@@ -47,7 +47,7 @@ class TestTensorFlowDiffusionModelLoad:
 
             # Create a new model and load the weights
             model2 = TensorFlowDiffusionModel(
-                image_size=28,
+                image_size=64,
                 num_channels=3,
                 epochs=1,
             )
@@ -57,7 +57,7 @@ class TestTensorFlowDiffusionModelLoad:
             # (we can't test exact equality due to random noise in generation)
             # Instead, verify that load doesn't raise and model is usable
             images = model2.generate_images(1)
-            assert images.shape == (1, 28, 28, 3)
+            assert images.shape == (1, 64, 64, 3)
 
     def test_load_raises_for_invalid_path(self):
         """
@@ -68,7 +68,7 @@ class TestTensorFlowDiffusionModelLoad:
         )
 
         model = TensorFlowDiffusionModel(
-            image_size=28,
+            image_size=64,
             num_channels=3,
             epochs=1,
         )

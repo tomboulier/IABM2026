@@ -194,6 +194,90 @@ class ConsoleTracker(TrainingTracker):
             self._epoch_pbar.close()
 
 
+class ImageSavingTracker(ConsoleTracker):
+    """
+    Training tracker that saves generated images at each epoch.
+
+    Extends ConsoleTracker with the ability to save sample images
+    to disk after each epoch for visual debugging.
+
+    Attributes
+    ----------
+    output_dir : str
+        Directory where generated images will be saved.
+    num_images : int
+        Number of images to display per epoch.
+    """
+
+    def __init__(
+        self,
+        output_dir: str = "./output",
+        num_images: int = 5,
+        show_batch_loss: bool = True,
+    ) -> None:
+        """
+        Initialize the ImageSavingTracker.
+
+        Parameters
+        ----------
+        output_dir : str, optional
+            Directory where generated images will be saved. Default is "./output".
+        num_images : int, optional
+            Number of images to display per epoch. Default is 5.
+        show_batch_loss : bool, optional
+            Whether to show loss in the batch progress bar. Default is True.
+        """
+        super().__init__(show_batch_loss=show_batch_loss)
+        self.output_dir = output_dir
+        self.num_images = num_images
+
+        # Create output directory if it doesn't exist
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+    def on_epoch_end_images(
+        self,
+        epoch: int,
+        images: Any,
+    ) -> None:
+        """
+        Save generated images to disk.
+
+        Parameters
+        ----------
+        epoch : int
+            Current epoch number (0-indexed).
+        images : Any
+            Generated images as numpy array with shape (n, H, W, C).
+            Values are in [0, 1] range.
+        """
+        import matplotlib
+        matplotlib.use('Agg')  # Use non-interactive backend
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        n = min(self.num_images, images.shape[0])
+        fig, axes = plt.subplots(1, n, figsize=(n * 2, 2))
+
+        if n == 1:
+            axes = [axes]
+
+        for i, ax in enumerate(axes):
+            img = images[i]
+            # Handle grayscale vs RGB
+            if img.shape[-1] == 1:
+                ax.imshow(img.squeeze(), cmap='gray', vmin=0, vmax=1)
+            else:
+                ax.imshow(np.clip(img, 0, 1))
+            ax.axis('off')
+
+        plt.tight_layout()
+        save_path = os.path.join(self.output_dir, f"epoch_{epoch:03d}.png")
+        plt.savefig(save_path, dpi=100, bbox_inches='tight')
+        plt.close(fig)
+        tqdm.write(f"  → Saved sample images to {save_path}")
+
+
 class SilentTracker(TrainingTracker):
     """
     Training tracker that produces no output.
