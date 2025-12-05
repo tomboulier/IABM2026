@@ -8,6 +8,7 @@ import logging
 
 from src.domain.interfaces.dataset_loader import DatasetLoader
 from src.domain.interfaces.model import Model
+from src.domain.interfaces.model_handler import ModelHandler
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,9 @@ class TrainAndSaveModel:
     dataset_loader : DatasetLoader
         Component responsible for loading datasets.
     model : Model
-        Model to train and save.
+        Model to train.
+    model_handler : ModelHandler
+        Handler for model persistence operations (save/load weights).
     output_path : str
         Path where the trained model weights will be saved.
     """
@@ -44,6 +47,7 @@ class TrainAndSaveModel:
         image_size: int,
         dataset_loader: DatasetLoader,
         model: Model,
+        model_handler: ModelHandler,
         output_path: str,
     ) -> None:
         """
@@ -60,7 +64,10 @@ class TrainAndSaveModel:
         dataset_loader : DatasetLoader
             Component responsible for loading datasets.
         model : Model
-            Model to train and save.
+            Model to train.
+        model_handler : ModelHandler
+            Handler for model persistence operations. Validates the
+            output path before training to fail fast on invalid paths.
         output_path : str
             Path where the trained model weights will be saved.
         """
@@ -69,6 +76,7 @@ class TrainAndSaveModel:
         self.image_size = image_size
         self.dataset_loader = dataset_loader
         self.model = model
+        self.model_handler = model_handler
         self.output_path = output_path
 
     def run(self) -> None:
@@ -76,22 +84,14 @@ class TrainAndSaveModel:
         Execute the training and saving workflow.
 
         This method:
-        1. Validates the output path
+        1. Validates the output path before training
         2. Loads the dataset using the configured loader
         3. Trains the model on the loaded dataset
         4. Saves the trained model weights to the output path
-
-        Raises
-        ------
-        ValueError
-            If the output path does not end with '.weights.h5'.
         """
-        # Validate output path BEFORE training to avoid losing work
-        if not self.output_path.endswith(".weights.h5"):
-            raise ValueError(
-                f"Output path must end with '.weights.h5'. "
-                f"Got: '{self.output_path}'"
-            )
+        # Validate output path BEFORE training to fail fast
+        logger.info("Validating output path...")
+        self.model_handler.validate_save_path(self.output_path)
 
         logger.info(f"Loading dataset {self.dataset_name}...")
         dataset = self.dataset_loader.load(
@@ -106,5 +106,5 @@ class TrainAndSaveModel:
         logger.info("Training completed.")
 
         logger.info(f"Saving model to {self.output_path}...")
-        self.model.save(self.output_path)
+        self.model_handler.save(self.output_path)
         logger.info("Model saved successfully.")

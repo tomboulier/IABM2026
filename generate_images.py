@@ -15,6 +15,7 @@ suppress_tensorflow_logging()
 from src.domain.use_cases.generate_and_save_images import GenerateAndSaveImages
 from src.infrastructure.logging import setup_logging
 from src.infrastructure.tensorflow.diffusion_model import TensorFlowDiffusionModel
+from src.infrastructure.tensorflow.model_handler import TensorFlowModelHandler
 
 
 def parse_args(argv=None):
@@ -86,10 +87,12 @@ def main(argv=None):
         num_channels=3,  # MedMNIST datasets are RGB
         plot_diffusion_steps=args.diffusion_steps,
     )
+    model_handler = TensorFlowModelHandler(model)
 
     # Create and run use-case
     use_case = GenerateAndSaveImages(
         model=model,
+        model_handler=model_handler,
         num_images=args.num_images,
         output_dir=args.output,
         weights_path=args.weights,

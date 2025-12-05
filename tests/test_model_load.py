@@ -75,3 +75,20 @@ class TestTensorFlowDiffusionModelLoad:
 
         with pytest.raises(Exception):  # Could be OSError, ValueError, etc.
             model.load("/nonexistent/path/model.weights.h5")
+
+    def test_load_raises_for_invalid_extension(self):
+        """
+        Loading from a path without '.weights.h5' extension should raise ValueError.
+        """
+        from src.infrastructure.tensorflow.diffusion_model import (
+            TensorFlowDiffusionModel,
+        )
+
+        model = TensorFlowDiffusionModel(
+            image_size=28,
+            num_channels=3,
+            epochs=1,
+        )
+
+        with pytest.raises(ValueError, match="must end with '.weights.h5'"):
+            model.load("/some/path/model.weights.h")

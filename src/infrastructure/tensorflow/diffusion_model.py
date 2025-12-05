@@ -294,7 +294,17 @@ class TensorFlowDiffusionModel(Model):
         ----------
         path : str
             Path to the saved model weights file.
+            Must end with '.weights.h5' for Keras compatibility.
+
+        Raises
+        ------
+        ValueError
+            If the path does not end with '.weights.h5'.
         """
+        if not path.endswith(".weights.h5"):
+            raise ValueError(
+                f"Weights path must end with '.weights.h5'. Got: '{path}'"
+            )
         self.load_weights(self.image_size, path, self.num_channels)
 
     # -------------------------------------------------------------------------
