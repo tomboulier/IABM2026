@@ -28,7 +28,7 @@ def suppress_tensorflow_logging() -> None:
     Should be called before importing TensorFlow.
     """
     # Set TensorFlow log level via environment variable (before TF import)
-    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # 0=ALL, 1=INFO, 2=WARNING, 3=ERROR
+    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # 0=ALL, 1=WARNING+, 2=ERROR+, 3=FATAL
 
     # Suppress absl logging (used by TensorFlow internally)
     logging.getLogger("tensorflow").setLevel(logging.ERROR)
