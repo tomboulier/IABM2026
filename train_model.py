@@ -92,8 +92,8 @@ def main(argv=None):
 
     # Ensure output directory exists
     output_dir = os.path.dirname(args.output)
-    if output_dir and not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
 
     # Instantiate dependencies
     dataset_loader = MedMNISTDatasetLoader()
