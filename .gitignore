@@ -17,3 +17,7 @@ wheels/
 logs/
 checkpoint/
 *.h5
+outputs/
+!outputs/.gitkeep
+models/
+!models/.gitkeep
