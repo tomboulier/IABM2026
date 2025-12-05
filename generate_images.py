@@ -1,7 +1,10 @@
 """
 CLI entry point for generating images from a pre-trained diffusion model.
 
-Usage:
+Usage with config file:
+    python generate_images.py -c config/generate.toml
+
+Usage with command-line args:
     python generate_images.py -w models/pathmnist.weights.h5 -o output/
     python generate_images.py -w models/blood.weights.h5 -o output/ -n 10 --image-size 64
 """
@@ -13,6 +16,7 @@ from src.infrastructure.tensorflow.observability import suppress_tensorflow_logg
 suppress_tensorflow_logging()
 
 from src.domain.use_cases.generate_and_save_images import GenerateAndSaveImages
+from src.infrastructure.configuration import GenerationConfiguration
 from src.infrastructure.logging import setup_logging
 from src.infrastructure.tensorflow.diffusion_model import TensorFlowDiffusionModel
 
@@ -35,9 +39,13 @@ def parse_args(argv=None):
         description="Generate images from a pre-trained diffusion model."
     )
     parser.add_argument(
+        "-c",
+        "--config",
+        help="Path to TOML configuration file (if provided, other args are ignored)",
+    )
+    parser.add_argument(
         "-w",
         "--weights",
-        required=True,
         help="Path to the saved model weights (.weights.h5 file)",
     )
     parser.add_argument(
@@ -80,23 +88,40 @@ def main(argv=None):
     setup_logging()
     args = parse_args(argv)
 
+    # Load configuration from file or command-line args
+    if args.config:
+        config = GenerationConfiguration.load(args.config)
+    else:
+        # Validate required args when not using config file
+        if not args.weights or not args.output:
+            raise ValueError(
+                "Either --config or both --weights and --output are required"
+            )
+        config = GenerationConfiguration(
+            weights=args.weights,
+            output=args.output,
+            num_images=args.num_images,
+            image_size=args.image_size,
+            diffusion_steps=args.diffusion_steps,
+        )
+
     # Instantiate the model (weights will be loaded by use-case)
     model = TensorFlowDiffusionModel(
-        image_size=args.image_size,
+        image_size=config.image_size,
         num_channels=3,  # MedMNIST datasets are RGB
-        plot_diffusion_steps=args.diffusion_steps,
+        plot_diffusion_steps=config.diffusion_steps,
     )
 
     # Create and run use-case
     use_case = GenerateAndSaveImages(
         model=model,
-        num_images=args.num_images,
-        output_dir=args.output,
-        weights_path=args.weights,
+        num_images=config.num_images,
+        output_dir=config.output,
+        weights_path=config.weights,
     )
     use_case.run()
 
-    print(f"Generated {args.num_images} images in {args.output}/")
+    print(f"Generated {config.num_images} images in {config.output}/")
 
 
 if __name__ == "__main__":
