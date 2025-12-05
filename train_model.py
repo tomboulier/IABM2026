@@ -20,6 +20,7 @@ from src.domain.use_cases.train_and_save_model import TrainAndSaveModel
 from src.infrastructure.loaders import MedMNISTDatasetLoader
 from src.infrastructure.logging import setup_logging
 from src.infrastructure.tensorflow.diffusion_model import TensorFlowDiffusionModel
+from src.infrastructure.tensorflow.model_handler import TensorFlowModelHandler
 
 
 def parse_args(argv=None):
@@ -105,6 +106,7 @@ def main(argv=None):
         batch_size=args.batch_size,
         tracker=tracker,
     )
+    model_handler = TensorFlowModelHandler(model)
 
     # Create and run use-case
     use_case = TrainAndSaveModel(
@@ -114,6 +116,7 @@ def main(argv=None):
         dataset_loader=dataset_loader,
         model=model,
         output_path=args.output,
+        model_handler=model_handler,
     )
     use_case.run()
 

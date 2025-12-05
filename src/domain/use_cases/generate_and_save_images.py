@@ -12,6 +12,7 @@ import numpy as np
 from PIL import Image
 
 from src.domain.interfaces.model import Model
+from src.domain.interfaces.model_handler import ModelHandler
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,8 @@ class GenerateAndSaveImages:
         Directory where generated images will be saved.
     weights_path : str | None
         Optional path to model weights to load before generation.
+    model_handler : ModelHandler | None
+        Optional handler for model persistence operations.
     """
 
     def __init__(
@@ -43,6 +46,7 @@ class GenerateAndSaveImages:
         num_images: int,
         output_dir: str,
         weights_path: Optional[str] = None,
+        model_handler: Optional[ModelHandler] = None,
     ) -> None:
         """
         Initialize the GenerateAndSaveImages use-case.
@@ -58,11 +62,15 @@ class GenerateAndSaveImages:
         weights_path : str | None, optional
             Path to model weights to load before generation.
             If None, the model is assumed to be already loaded/trained.
+        model_handler : ModelHandler | None, optional
+            Handler for model persistence. If provided, uses handler.load()
+            instead of model.load().
         """
         self.model = model
         self.num_images = num_images
         self.output_dir = output_dir
         self.weights_path = weights_path
+        self.model_handler = model_handler
 
     def run(self) -> None:
         """
@@ -82,7 +90,10 @@ class GenerateAndSaveImages:
         # Load weights if path provided
         if self.weights_path is not None:
             logger.info(f"Loading model weights from {self.weights_path}...")
-            self.model.load(self.weights_path)
+            if self.model_handler is not None:
+                self.model_handler.load(self.weights_path)
+            else:
+                self.model.load(self.weights_path)
 
         # Generate images
         logger.info(f"Generating {self.num_images} images...")

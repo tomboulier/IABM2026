@@ -5,9 +5,11 @@ This module provides a use-case for training a generative model on a dataset
 and saving the trained weights to disk for later use.
 """
 import logging
+from typing import Optional
 
 from src.domain.interfaces.dataset_loader import DatasetLoader
 from src.domain.interfaces.model import Model
+from src.domain.interfaces.model_handler import ModelHandler
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,10 @@ class TrainAndSaveModel:
         Model to train and save.
     output_path : str
         Path where the trained model weights will be saved.
+    model_handler : ModelHandler | None
+        Optional handler for model persistence operations.
+        If provided, validates the output path before training and
+        uses handler.save() instead of model.save().
     """
 
     def __init__(
@@ -45,6 +51,7 @@ class TrainAndSaveModel:
         dataset_loader: DatasetLoader,
         model: Model,
         output_path: str,
+        model_handler: Optional[ModelHandler] = None,
     ) -> None:
         """
         Initialize the TrainAndSaveModel use-case.
@@ -63,6 +70,9 @@ class TrainAndSaveModel:
             Model to train and save.
         output_path : str
             Path where the trained model weights will be saved.
+        model_handler : ModelHandler | None, optional
+            Handler for model persistence. If provided, validates the
+            output path before training to fail fast on invalid paths.
         """
         self.dataset_name = dataset_name
         self.max_samples = max_samples
@@ -70,16 +80,23 @@ class TrainAndSaveModel:
         self.dataset_loader = dataset_loader
         self.model = model
         self.output_path = output_path
+        self.model_handler = model_handler
 
     def run(self) -> None:
         """
         Execute the training and saving workflow.
 
         This method:
-        1. Loads the dataset using the configured loader
-        2. Trains the model on the loaded dataset
-        3. Saves the trained model weights to the output path
+        1. Validates the output path (if model_handler is provided)
+        2. Loads the dataset using the configured loader
+        3. Trains the model on the loaded dataset
+        4. Saves the trained model weights to the output path
         """
+        # Validate output path BEFORE training if handler is provided
+        if self.model_handler is not None:
+            logger.info("Validating output path...")
+            self.model_handler.validate_save_path(self.output_path)
+
         logger.info(f"Loading dataset {self.dataset_name}...")
         dataset = self.dataset_loader.load(
             self.dataset_name,
@@ -93,5 +110,8 @@ class TrainAndSaveModel:
         logger.info("Training completed.")
 
         logger.info(f"Saving model to {self.output_path}...")
-        self.model.save(self.output_path)
+        if self.model_handler is not None:
+            self.model_handler.save(self.output_path)
+        else:
+            self.model.save(self.output_path)
         logger.info("Model saved successfully.")
