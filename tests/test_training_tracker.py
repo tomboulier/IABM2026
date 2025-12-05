@@ -67,6 +67,10 @@ class TestConsoleTracker:
 
         tracker.on_training_end()
 
+
+class TestSilentTracker:
+    """Tests for SilentTracker implementation."""
+
     def test_silent_tracker_produces_no_output(self):
         """SilentTracker should produce no console output."""
         from src.infrastructure.tensorflow.observability import SilentTracker
