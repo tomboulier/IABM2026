@@ -1,8 +1,8 @@
 [training]
 # Configuration for training on ChestMNIST dataset
-dataset = "OCTMNIST"
-output = "models/OCT_epoch-1_all-images_image-size-64_batch-8.weights.h5"
-image_size = 64
+dataset = "ChestMNIST"
+output = "models/chest_epoch-1_all-images_image-size-28_batch-8.weights.h5"
+image_size = 28
 epochs = 1
 batch_size = 8
 samples_output_dir = "./outputs"
