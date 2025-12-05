@@ -199,12 +199,13 @@ class ImageSavingTracker(ConsoleTracker):
     Training tracker that saves generated images at each epoch.
 
     Extends ConsoleTracker with the ability to save sample images
-    to disk after each epoch for visual debugging.
+    to disk after each epoch for visual debugging. Images are saved
+    in a subdirectory named after the dataset.
 
     Attributes
     ----------
     output_dir : str
-        Directory where generated images will be saved.
+        Base directory where generated images will be saved.
     num_images : int
         Number of images to display per epoch.
     """
@@ -221,19 +222,46 @@ class ImageSavingTracker(ConsoleTracker):
         Parameters
         ----------
         output_dir : str, optional
-            Directory where generated images will be saved. Default is "./output".
+            Base directory where generated images will be saved. Default is "./output".
+            A subdirectory will be created for each dataset.
         num_images : int, optional
             Number of images to display per epoch. Default is 5.
         show_batch_loss : bool, optional
             Whether to show loss in the batch progress bar. Default is True.
         """
         super().__init__(show_batch_loss=show_batch_loss)
-        self.output_dir = output_dir
+        self.base_output_dir = output_dir
+        self.output_dir = output_dir  # Will be updated in on_training_start
         self.num_images = num_images
 
-        # Create output directory if it doesn't exist
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+    def on_training_start(
+        self,
+        total_epochs: int,
+        total_batches: int,
+        dataset_name: str | None = None,
+    ) -> None:
+        """
+        Called when training begins. Sets up output directory for this dataset.
+
+        Parameters
+        ----------
+        total_epochs : int
+            Total number of epochs to train.
+        total_batches : int
+            Total number of batches per epoch.
+        dataset_name : str | None, optional
+            Name of the dataset being trained on.
+        """
+        super().on_training_start(total_epochs, total_batches, dataset_name)
+
+        # Create dataset-specific output directory
+        if dataset_name:
+            self.output_dir = os.path.join(self.base_output_dir, dataset_name)
+        else:
+            self.output_dir = self.base_output_dir
+
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
 
     def on_epoch_end_images(
         self,
