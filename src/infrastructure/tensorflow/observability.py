@@ -39,6 +39,7 @@ def suppress_tensorflow_logging() -> None:
         import tensorflow as tf
         tf.get_logger().setLevel(logging.ERROR)
     except ImportError:
+        # Safe to ignore: TensorFlow not yet imported, so no logger to suppress.
         pass
 
 
