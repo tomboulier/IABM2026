@@ -10,7 +10,7 @@ import os
 
 # Suppress TensorFlow logging before importing TF
 from src.infrastructure.tensorflow.observability import (
-    ConsoleTracker,
+    ImageSavingTracker,
     suppress_tensorflow_logging,
 )
 
@@ -75,6 +75,18 @@ def parse_args(argv=None):
         default=32,
         help="Training batch size (default: 32)",
     )
+    parser.add_argument(
+        "--learning-rate",
+        type=float,
+        default=1e-3,
+        help="Learning rate (default: 1e-3)",
+    )
+    parser.add_argument(
+        "--samples-output-dir",
+        type=str,
+        default="./output",
+        help="Directory for sample images during training (default: ./output)",
+    )
     return parser.parse_args(argv)
 
 
@@ -97,12 +109,13 @@ def main(argv=None):
 
     # Instantiate dependencies
     dataset_loader = MedMNISTDatasetLoader()
-    tracker = ConsoleTracker()
+    tracker = ImageSavingTracker(output_dir=args.samples_output_dir)
     model = TensorFlowDiffusionModel(
         image_size=args.image_size,
         num_channels=3,  # MedMNIST datasets are converted to RGB
         epochs=args.epochs,
         batch_size=args.batch_size,
+        learning_rate=args.learning_rate,
         tracker=tracker,
     )
 

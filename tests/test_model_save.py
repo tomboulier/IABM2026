@@ -40,7 +40,7 @@ class TestTensorFlowDiffusionModelSave:
         )
 
         model = TensorFlowDiffusionModel(
-            image_size=28,
+            image_size=64,
             num_channels=1,
             epochs=0,  # No training needed for this test
         )
@@ -62,7 +62,7 @@ class TestTensorFlowDiffusionModelSave:
         )
 
         model = TensorFlowDiffusionModel(
-            image_size=28,
+            image_size=64,
             num_channels=1,
             epochs=0,
         )
@@ -73,7 +73,7 @@ class TestTensorFlowDiffusionModelSave:
 
             # Load into a new model instance
             loaded_model = TensorFlowDiffusionModel(
-                image_size=28,
+                image_size=64,
                 num_channels=1,
                 epochs=0,
                 load_weights_path=weights_path,

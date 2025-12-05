@@ -172,21 +172,8 @@ def UpBlock(width, block_depth):
 
         for _ in range(block_depth):
             # Retrieve skip connection from encoder (LIFO order)
-            skip = skips.pop()
-
-            # Handle shape mismatch by cropping skip connection to match x
-            # This can occur due to rounding in pooling/upsampling operations
-            skip_shape = skip.shape
-            x_shape = x.shape
-            if skip_shape[1] != x_shape[1] or skip_shape[2] != x_shape[2]:
-                # Crop skip to match x dimensions (remove excess pixels)
-                crop_h = skip_shape[1] - x_shape[1]
-                crop_w = skip_shape[2] - x_shape[2]
-                if crop_h > 0 or crop_w > 0:
-                    skip = layers.Cropping2D(cropping=((0, crop_h), (0, crop_w)))(skip)
-
             # Concatenate upsampled features with skip connection
-            x = layers.Concatenate()([x, skip])
+            x = layers.Concatenate()([x, skips.pop()])
             # Apply residual block to process combined features
             x = ResidualBlock(width)(x)
         return x
@@ -320,10 +307,6 @@ def get_unet(image_size: int, noise_embedding_size: int, num_channels: int = 1):
     # Final projection: map to output noise prediction (same channels as input)
     # Initialize with zeros so initial predictions are near zero
     x = layers.Conv2D(num_channels, kernel_size=1, kernel_initializer="zeros")(x)
-
-    # Ensure output size matches input size exactly
-    # (handles any rounding issues from pooling/upsampling)
-    x = layers.Resizing(image_size, image_size, interpolation="bilinear")(x)
 
     unet = models.Model([noisy_images, noise_variances], x, name="unet")
     return unet

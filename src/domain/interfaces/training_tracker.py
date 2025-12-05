@@ -108,3 +108,24 @@ class TrainingTracker(ABC):
     def on_training_end(self) -> None:
         """Called when training completes."""
         pass
+
+    def on_epoch_end_images(
+        self,
+        epoch: int,
+        images: Any,
+    ) -> None:
+        """
+        Called at the end of each epoch with generated sample images.
+
+        This method is optional - the default implementation does nothing.
+        Override this to display or save generated images during training.
+
+        Parameters
+        ----------
+        epoch : int
+            Current epoch number (0-indexed).
+        images : Any
+            Generated images as numpy array with shape (n, H, W, C).
+            Values are in [0, 1] range.
+        """
+        pass  # Default: do nothing
