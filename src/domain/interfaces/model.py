@@ -25,11 +25,15 @@ class Model(ABC):
         """
         Generate a batch of images from the trained model.
 
-        Parameters:
-            n (int): Number of images to generate.
+        Parameters
+        ----------
+        n : int
+            Number of images to generate.
 
-        Returns:
-            Tensor: Tensor containing the generated images.
+        Returns
+        -------
+        Tensor
+            Tensor containing the generated images.
         """
         pass
 
