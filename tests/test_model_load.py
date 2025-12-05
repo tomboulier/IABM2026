@@ -1,7 +1,6 @@
 """Tests for Model.load() method."""
 import tempfile
 
-import numpy as np
 import pytest
 
 from src.domain.interfaces.model import Model
