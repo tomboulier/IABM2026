@@ -84,7 +84,7 @@ def parse_args(argv=None):
     parser.add_argument(
         "--samples-output-dir",
         type=str,
-        default="./output",
+        default="./outputs",
         help="Directory for sample images during training (default: ./output)",
     )
     return parser.parse_args(argv)

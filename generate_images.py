@@ -43,7 +43,7 @@ def parse_args(argv=None):
     parser.add_argument(
         "-o",
         "--output",
-        required=True,
+        default="./outputs",
         help="Output directory for generated images",
     )
     parser.add_argument(
