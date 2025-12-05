@@ -92,10 +92,10 @@ def main(argv=None):
     # Create and run use-case
     use_case = GenerateAndSaveImages(
         model=model,
+        model_handler=model_handler,
         num_images=args.num_images,
         output_dir=args.output,
         weights_path=args.weights,
-        model_handler=model_handler,
     )
     use_case.run()
 

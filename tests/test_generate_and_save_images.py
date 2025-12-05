@@ -6,6 +6,7 @@ from unittest.mock import MagicMock
 import numpy as np
 
 from src.domain.interfaces.model import Model
+from src.domain.interfaces.model_handler import ModelHandler
 
 
 class TestGenerateAndSaveImages:
@@ -26,12 +27,14 @@ class TestGenerateAndSaveImages:
         from src.domain.use_cases.generate_and_save_images import GenerateAndSaveImages
 
         mock_model = MagicMock(spec=Model)
+        mock_handler = MagicMock(spec=ModelHandler)
         # Return fake images (n, H, W, C) in [0, 1] range
         mock_model.generate_images.return_value = np.random.rand(5, 28, 28, 3)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             use_case = GenerateAndSaveImages(
                 model=mock_model,
+                model_handler=mock_handler,
                 num_images=5,
                 output_dir=tmpdir,
             )
@@ -46,11 +49,13 @@ class TestGenerateAndSaveImages:
         from src.domain.use_cases.generate_and_save_images import GenerateAndSaveImages
 
         mock_model = MagicMock(spec=Model)
+        mock_handler = MagicMock(spec=ModelHandler)
         mock_model.generate_images.return_value = np.random.rand(3, 28, 28, 3)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             use_case = GenerateAndSaveImages(
                 model=mock_model,
+                model_handler=mock_handler,
                 num_images=3,
                 output_dir=tmpdir,
             )
@@ -68,6 +73,7 @@ class TestGenerateAndSaveImages:
         from src.domain.use_cases.generate_and_save_images import GenerateAndSaveImages
 
         mock_model = MagicMock(spec=Model)
+        mock_handler = MagicMock(spec=ModelHandler)
         mock_model.generate_images.return_value = np.random.rand(1, 28, 28, 3)
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -75,6 +81,7 @@ class TestGenerateAndSaveImages:
 
             use_case = GenerateAndSaveImages(
                 model=mock_model,
+                model_handler=mock_handler,
                 num_images=1,
                 output_dir=output_dir,
             )
@@ -91,18 +98,20 @@ class TestGenerateAndSaveImages:
         from src.domain.use_cases.generate_and_save_images import GenerateAndSaveImages
 
         mock_model = MagicMock(spec=Model)
+        mock_handler = MagicMock(spec=ModelHandler)
         mock_model.generate_images.return_value = np.random.rand(1, 28, 28, 3)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             use_case = GenerateAndSaveImages(
                 model=mock_model,
+                model_handler=mock_handler,
                 num_images=1,
                 output_dir=tmpdir,
                 weights_path="/path/to/weights.h5",
             )
             use_case.run()
 
-            mock_model.load.assert_called_once_with("/path/to/weights.h5")
+            mock_handler.load.assert_called_once_with("/path/to/weights.h5")
 
     def test_run_does_not_load_if_no_weights_path(self):
         """
@@ -111,17 +120,19 @@ class TestGenerateAndSaveImages:
         from src.domain.use_cases.generate_and_save_images import GenerateAndSaveImages
 
         mock_model = MagicMock(spec=Model)
+        mock_handler = MagicMock(spec=ModelHandler)
         mock_model.generate_images.return_value = np.random.rand(1, 28, 28, 3)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             use_case = GenerateAndSaveImages(
                 model=mock_model,
+                model_handler=mock_handler,
                 num_images=1,
                 output_dir=tmpdir,
             )
             use_case.run()
 
-            mock_model.load.assert_not_called()
+            mock_handler.load.assert_not_called()
 
     def test_saved_images_are_valid_pngs(self):
         """
@@ -131,11 +142,13 @@ class TestGenerateAndSaveImages:
         from PIL import Image
 
         mock_model = MagicMock(spec=Model)
+        mock_handler = MagicMock(spec=ModelHandler)
         mock_model.generate_images.return_value = np.random.rand(2, 32, 32, 3)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             use_case = GenerateAndSaveImages(
                 model=mock_model,
+                model_handler=mock_handler,
                 num_images=2,
                 output_dir=tmpdir,
             )

@@ -115,8 +115,8 @@ def main(argv=None):
         image_size=args.image_size,
         dataset_loader=dataset_loader,
         model=model,
-        output_path=args.output,
         model_handler=model_handler,
+        output_path=args.output,
     )
     use_case.run()
 

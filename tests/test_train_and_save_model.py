@@ -7,6 +7,7 @@ import pytest
 
 from src.domain.interfaces.dataset_loader import DatasetLoader
 from src.domain.interfaces.model import Model
+from src.domain.interfaces.model_handler import ModelHandler
 
 
 class TestTrainAndSaveModel:
@@ -31,6 +32,7 @@ class TestTrainAndSaveModel:
         mock_dataset = MagicMock()
         mock_loader.load.return_value = mock_dataset
         mock_model = MagicMock(spec=Model)
+        mock_handler = MagicMock(spec=ModelHandler)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = os.path.join(tmpdir, "model.weights.h5")
@@ -41,6 +43,7 @@ class TestTrainAndSaveModel:
                 image_size=28,
                 dataset_loader=mock_loader,
                 model=mock_model,
+                model_handler=mock_handler,
                 output_path=output_path,
             )
             use_case.run()
@@ -57,6 +60,7 @@ class TestTrainAndSaveModel:
         mock_dataset = MagicMock()
         mock_loader.load.return_value = mock_dataset
         mock_model = MagicMock(spec=Model)
+        mock_handler = MagicMock(spec=ModelHandler)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = os.path.join(tmpdir, "model.weights.h5")
@@ -67,6 +71,7 @@ class TestTrainAndSaveModel:
                 image_size=28,
                 dataset_loader=mock_loader,
                 model=mock_model,
+                model_handler=mock_handler,
                 output_path=output_path,
             )
             use_case.run()
@@ -86,6 +91,7 @@ class TestTrainAndSaveModel:
         mock_dataset = MagicMock()
         mock_loader.load.return_value = mock_dataset
         mock_model = MagicMock(spec=Model)
+        mock_handler = MagicMock(spec=ModelHandler)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = os.path.join(tmpdir, "model.weights.h5")
@@ -96,11 +102,12 @@ class TestTrainAndSaveModel:
                 image_size=28,
                 dataset_loader=mock_loader,
                 model=mock_model,
+                model_handler=mock_handler,
                 output_path=output_path,
             )
             use_case.run()
 
-            mock_model.save.assert_called_once_with(output_path)
+            mock_handler.save.assert_called_once_with(output_path)
 
     def test_operations_happen_in_correct_order(self):
         """
@@ -122,7 +129,9 @@ class TestTrainAndSaveModel:
 
         mock_model = MagicMock(spec=Model)
         mock_model.train.side_effect = lambda *args, **kwargs: call_order.append("train")
-        mock_model.save.side_effect = lambda *args, **kwargs: call_order.append("save")
+
+        mock_handler = MagicMock(spec=ModelHandler)
+        mock_handler.save.side_effect = lambda *args, **kwargs: call_order.append("save")
 
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = os.path.join(tmpdir, "model.weights.h5")
@@ -133,6 +142,7 @@ class TestTrainAndSaveModel:
                 image_size=28,
                 dataset_loader=mock_loader,
                 model=mock_model,
+                model_handler=mock_handler,
                 output_path=output_path,
             )
             use_case.run()
