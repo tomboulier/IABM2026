@@ -130,7 +130,7 @@ def main(argv=None):
         )
 
     # Ensure output directory exists
-    output_dir = os.path.dirname(args.output)
+    output_dir = os.path.dirname(config.output)
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
 
