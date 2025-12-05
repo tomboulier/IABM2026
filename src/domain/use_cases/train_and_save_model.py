@@ -76,23 +76,10 @@ class TrainAndSaveModel:
         Execute the training and saving workflow.
 
         This method:
-        1. Validates the output path
-        2. Loads the dataset using the configured loader
-        3. Trains the model on the loaded dataset
-        4. Saves the trained model weights to the output path
-
-        Raises
-        ------
-        ValueError
-            If the output path does not end with '.weights.h5'.
+        1. Loads the dataset using the configured loader
+        2. Trains the model on the loaded dataset
+        3. Saves the trained model weights to the output path
         """
-        # Validate output path BEFORE training to avoid losing work
-        if not self.output_path.endswith(".weights.h5"):
-            raise ValueError(
-                f"Output path must end with '.weights.h5'. "
-                f"Got: '{self.output_path}'"
-            )
-
         logger.info(f"Loading dataset {self.dataset_name}...")
         dataset = self.dataset_loader.load(
             self.dataset_name,
