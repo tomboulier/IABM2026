@@ -3,7 +3,7 @@
 # Environment setup using uv
 install:
 	uv venv
-	uv pip install -r pyproject.toml
+	uv sync
 
 # Run the main experiment
 run:
@@ -11,15 +11,15 @@ run:
 
 # Run tests (if any)
 test:
-	uv run python -m unittest discover -s . -p "test_*.py"
+	uv run pytest
 
 # Docker build
 docker-build:
-	docker build -t medmnist-variability .
+	docker build -t medmnist-variability-similarity .
 
 # Docker run
 docker-run:
-	docker run --rm medmnist-variability
+	docker run --rm medmnist-variability-similarity
 
 # Clean up
 clean:
