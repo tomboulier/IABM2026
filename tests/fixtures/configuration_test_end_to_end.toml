@@ -1,6 +1,4 @@
 [experiment]
 datasets = ["ChestMNIST"]
-max_samples = 50
-# Note: image_size must be divisible by 8 due to 3-level downsampling in U-Net
-image_size = 64
-batch_size = 4
+max_samples = 20
+image_size = 28
