@@ -79,11 +79,21 @@ class TensorFlowDatasetAdapter:
 
             yield image
 
-    def to_tensorflow_dataset(self) -> tf.data.Dataset:
-        # Convert domain Dataset to TensorFlow dataset
-        # This generator function handles the conversion from domain protocol to TensorFlow
+    def to_tensorflow_dataset(self, shuffle: bool = True) -> tf.data.Dataset:
+        """
+        Convert domain Dataset to TensorFlow tf.data.Dataset.
 
-        # Create TensorFlow dataset
+        Parameters
+        ----------
+        shuffle : bool, optional
+            Whether to shuffle the dataset each epoch. Default is True.
+
+        Returns
+        -------
+        tf.data.Dataset
+            Batched and optimized TensorFlow dataset.
+        """
+        # Create TensorFlow dataset from generator
         tf_dataset = tf.data.Dataset.from_generator(
             lambda: self.generator(self.dataset),
             output_signature=tf.TensorSpec(
@@ -91,9 +101,21 @@ class TensorFlowDatasetAdapter:
                 dtype=tf.float32
             )
         )
+
+        # Cache dataset in memory after first epoch
+        # This avoids re-running the generator and conversions each epoch
+        tf_dataset = tf_dataset.cache()
+
+        # Shuffle for better training (reshuffle each epoch)
+        if shuffle:
+            buffer_size = min(len(self.dataset), 10000)  # Cap buffer to avoid OOM
+            tf_dataset = tf_dataset.shuffle(buffer_size, reshuffle_each_iteration=True)
+
         # Batch the dataset. Use drop_remainder=True to ensure consistent batch sizes
         # (avoids a final smaller batch which can cause shape mismatches during XLA compilation)
         tf_dataset = tf_dataset.batch(self.batch_size, drop_remainder=True)
-        # Add simple prefetch to improve input pipeline performance
+
+        # Prefetch to overlap data loading with training
         tf_dataset = tf_dataset.prefetch(tf.data.AUTOTUNE)
+
         return tf_dataset
