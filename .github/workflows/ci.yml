@@ -11,6 +11,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     
+    # Limit permissions to read-only for security
+    permissions:
+      contents: read
+    
     steps:
       # Checkout repository code
       - name: Checkout code
