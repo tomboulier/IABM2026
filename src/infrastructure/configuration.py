@@ -48,17 +48,20 @@ class TrainingConfiguration:
     """Configuration for model training."""
 
     dataset: str
-    output: str | None = None
+    output: str | None = None  # Note: After __post_init__, this is always a str
     max_samples: int | None = None
     image_size: int = 64
     epochs: int = 50
     batch_size: int = 32
     learning_rate: float = 1e-3
     samples_output_dir: str = "./output"
-    output_dir: str = "models"
+    output_dir: str = "models"  # Directory for model weights storage
 
     def __post_init__(self):
-        """Generate output path if not provided."""
+        """Generate output path if not provided.
+        
+        After this method executes, self.output is guaranteed to be a str.
+        """
         if self.output is None:
             self.output = _generate_output_path(
                 dataset=self.dataset,
