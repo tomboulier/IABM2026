@@ -37,7 +37,7 @@ def _(pd):
     results_path = notebook_dir / "../results/experiment_results.csv"
     df = pd.read_csv(results_path)
     df
-    return Path, df, notebook_dir, results_path
+    return (df,)
 
 
 @app.cell
@@ -61,7 +61,7 @@ def _(df, plt):
     # Create scatter plot
     scatter = ax.scatter(
         df["variability"],
-        df["similarity"],
+        1/df["similarity"],
         s=100,
         alpha=0.7,
         c=range(len(df)),
@@ -72,14 +72,14 @@ def _(df, plt):
     for idx, row in df.iterrows():
         ax.annotate(
             row["dataset"].replace("MNIST", ""),
-            (row["variability"], row["similarity"]),
+            (row["variability"], 1/row["similarity"]),
             textcoords="offset points",
             xytext=(5, 5),
             fontsize=9,
         )
 
     ax.set_xlabel("Variability (MSD to Centroid)", fontsize=12)
-    ax.set_ylabel("Similarity (FID)", fontsize=12)
+    ax.set_ylabel("Similarity (1/FID)", fontsize=12)
     ax.set_title("Dataset Variability vs Model Similarity", fontsize=14)
     ax.grid(True, alpha=0.3)
 
@@ -89,16 +89,141 @@ def _(df, plt):
 
 
 @app.cell
-def _(df, mo):
-    mo.md(f"""
-    ## Summary Statistics
+def _(mo):
+    mo.md(r"""
+    ## Model Testing
 
-    | Metric | Min | Max | Mean | Std |
-    |--------|-----|-----|------|-----|
-    | Variability | {df['variability'].min():.2f} | {df['variability'].max():.2f} | {df['variability'].mean():.2f} | {df['variability'].std():.2f} |
-    | Similarity (FID) | {df['similarity'].min():.2f} | {df['similarity'].max():.2f} | {df['similarity'].mean():.2f} | {df['similarity'].std():.2f} |
+    Select a dataset and number of images to compare real vs generated samples.
     """)
     return
+
+
+@app.cell
+def _(df, mo):
+    # Create dropdown for dataset selection
+    dataset_dropdown = mo.ui.dropdown(
+        options=df["dataset"].tolist(),
+        value=df["dataset"].iloc[0],
+        label="Dataset",
+    )
+    # Create slider for number of images
+    num_images_slider = mo.ui.slider(
+        start=1,
+        stop=10,
+        value=5,
+        label="Number of images",
+    )
+    mo.hstack([dataset_dropdown, num_images_slider])
+    return dataset_dropdown, num_images_slider
+
+
+@app.cell
+def _(dataset_dropdown, df):
+    # Get weights path for selected dataset
+    selected_dataset = dataset_dropdown.value
+    weights_path_row = df[df["dataset"] == selected_dataset]["model_weights"]
+    weights_path = weights_path_row.iloc[0] if len(weights_path_row) > 0 else None
+    return selected_dataset, weights_path, weights_path_row
+
+
+@app.cell
+def _():
+    # Import required modules for model and data loading
+    import numpy as np
+    from pathlib import Path as PathLib
+
+    # Get project root
+    project_root = PathLib(__file__).parent.parent
+    return PathLib, np, project_root
+
+
+@app.cell
+def _(np, project_root, selected_dataset):
+    # Load dataset
+    from src.infrastructure.loaders import MedMNISTDatasetLoader
+
+    loader = MedMNISTDatasetLoader()
+    dataset = loader.load(selected_dataset, max_samples=None, image_size=28)
+
+    # Get random sample indices
+    sample_indices = np.random.choice(len(dataset), size=min(10, len(dataset)), replace=False)
+    return MedMNISTDatasetLoader, dataset, loader, sample_indices
+
+
+@app.cell
+def _(dataset, num_images_slider, np, plt, sample_indices):
+    # Display random real images from dataset
+    n_images = num_images_slider.value
+    indices_to_show = sample_indices[:n_images]
+
+    fig_real, axes_real = plt.subplots(1, n_images, figsize=(n_images * 2, 2))
+    if n_images == 1:
+        axes_real = [axes_real]
+
+    for i, idx in enumerate(indices_to_show):
+        img = dataset[idx]
+        if isinstance(img, tuple):
+            img = img[0]
+        # Convert to numpy if needed
+        if hasattr(img, "numpy"):
+            img = img.numpy()
+        img = np.array(img)
+        # Handle channel ordering (C, H, W) -> (H, W, C)
+        if img.ndim == 3 and img.shape[0] in [1, 3]:
+            img = np.transpose(img, (1, 2, 0))
+        # Handle grayscale
+        if img.ndim == 3 and img.shape[-1] == 1:
+            img = img.squeeze(-1)
+            axes_real[i].imshow(img, cmap="gray")
+        else:
+            axes_real[i].imshow(img)
+        axes_real[i].axis("off")
+        axes_real[i].set_title(f"Real #{idx}")
+
+    fig_real.suptitle("Real Images from Dataset", fontsize=12)
+    plt.tight_layout()
+    fig_real
+    return axes_real, fig_real, i, idx, img, indices_to_show, n_images
+
+
+@app.cell
+def _(num_images_slider, project_root, weights_path):
+    # Load model and generate images
+    from src.infrastructure.tensorflow.diffusion_model import TensorFlowDiffusionModel
+
+    model = TensorFlowDiffusionModel(
+        image_size=28,
+        num_channels=3,
+    )
+    full_weights_path = project_root / weights_path
+    model.load(str(full_weights_path))
+
+    # Generate images
+    n_gen = num_images_slider.value
+    generated_images = model.generate_images(n=n_gen)
+    return TensorFlowDiffusionModel, full_weights_path, generated_images, model, n_gen
+
+
+@app.cell
+def _(generated_images, n_gen, np, plt):
+    # Display generated images
+    fig_gen, axes_gen = plt.subplots(1, n_gen, figsize=(n_gen * 2, 2))
+    if n_gen == 1:
+        axes_gen = [axes_gen]
+
+    for j, gen_img in enumerate(generated_images[:n_gen]):
+        # Handle grayscale
+        if gen_img.shape[-1] == 1:
+            axes_gen[j].imshow(gen_img.squeeze(-1), cmap="gray")
+        else:
+            axes_gen[j].imshow(np.clip(gen_img, 0, 1))
+        axes_gen[j].axis("off")
+        axes_gen[j].set_title(f"Gen #{j+1}")
+
+    fig_gen.suptitle("Generated Images from Model", fontsize=12)
+    plt.tight_layout()
+    fig_gen
+    return axes_gen, fig_gen, gen_img, j
 
 
 if __name__ == "__main__":
