@@ -168,6 +168,9 @@ def main(argv=None):
         batch_config = BatchTrainingConfiguration.load(args.config)
         total = len(batch_config.trainings)
         logger.info(f"Starting batch training with {total} configurations")
+        if total == 0:
+            logger.error("Batch configuration contains no training entries. Please check your batch config file.")
+            raise ValueError("Empty batch configuration: no training entries found.")
 
         for i, config in enumerate(batch_config.trainings, start=1):
             logger.info(f"[{i}/{total}] Training {config.dataset} -> {config.output}")
