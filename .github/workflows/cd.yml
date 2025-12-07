@@ -32,21 +32,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      # Extract repository metadata for Docker tags
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository }}
-          tags: |
-            type=raw,value=latest
-            type=sha,prefix={{branch}}-
-      
       # Build Docker image using Makefile
       - name: Build Docker image
         run: make docker-build
       
       # Tag and push the Docker image to GHCR
+      # Note: Image name matches the one defined in Makefile (docker-build target)
       - name: Push Docker image to GHCR
         run: |
           docker tag medmnist-variability-similarity:latest ghcr.io/${{ github.repository }}:latest
