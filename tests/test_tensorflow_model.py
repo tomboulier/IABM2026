@@ -12,7 +12,7 @@ class MinimalDataset:
     Creates 10 simple grayscale images.
     """
 
-    def __init__(self, size=28, num_samples=10):
+    def __init__(self, size=64, num_samples=10):
         self.size = size
         self.num_samples = num_samples
         # Create simple random images
@@ -36,8 +36,9 @@ class TestTensorFlowModel:
     @pytest.fixture()
     def minimal_model(self) -> TensorFlowDiffusionModel:
         # Create model with minimal parameters
+        # Note: image_size must be divisible by 8 due to 3-level downsampling in U-Net
         model = TensorFlowDiffusionModel(
-            image_size=28,
+            image_size=64,
             num_channels=3,
             noise_embedding_size=16,  # Small embedding for speed
             batch_size=5,
@@ -48,12 +49,13 @@ class TestTensorFlowModel:
 
     @pytest.fixture()
     def minimal_dataset(self) -> Dataset:
-        return MinimalDataset(size=28, num_samples=10)
+        return MinimalDataset(size=64, num_samples=10)
 
     def test_tensorflow_model_creation(self):
         """Test that the TensorFlow model can be created."""
+        # Note: image_size must be divisible by 8 due to 3-level downsampling in U-Net
         model = TensorFlowDiffusionModel(
-            image_size=28,
+            image_size=64,
             num_channels=3,
             noise_embedding_size=32,
             batch_size=4,
@@ -61,7 +63,7 @@ class TestTensorFlowModel:
             plot_diffusion_steps=5  # Very few steps for fast testing
         )
         assert model is not None
-        assert model.image_size == 28
+        assert model.image_size == 64
 
     @pytest.mark.filterwarnings("ignore:Your input ran out of data:UserWarning")
     def test_tensorflow_model_training(self, minimal_model, minimal_dataset):
@@ -81,7 +83,7 @@ class TestTensorFlowModel:
         Test that the TensorFlow model generates images with correct shape.
         """
         # Create and train model
-        dataset = MinimalDataset(size=28, num_samples=10)
+        dataset = MinimalDataset(size=64, num_samples=10)
         minimal_model.train(minimal_dataset)
 
         # Generate a few images
@@ -100,7 +102,8 @@ class TestTensorFlowModel:
         """Verify that TensorFlowDiffusionModelAdapter implements Model interface."""
         from src.domain.interfaces.model import Model
 
-        model = TensorFlowDiffusionModel()
+        # Note: image_size must be divisible by 8 due to 3-level downsampling in U-Net
+        model = TensorFlowDiffusionModel(image_size=64)
         assert isinstance(model, Model), "Model should implement domain Model interface"
 
         # Check required methods exist

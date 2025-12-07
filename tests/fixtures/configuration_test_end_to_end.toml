@@ -1,4 +1,4 @@
 [experiment]
 datasets = ["ChestMNIST"]
-max_samples = 100
+max_samples = 20
 image_size = 28

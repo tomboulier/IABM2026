@@ -48,6 +48,7 @@ from tensorflow import keras
 from src.domain.entities.dataset import Dataset
 from src.domain.entities.tensor import Tensor
 from src.domain.interfaces.model import Model
+from src.domain.interfaces.training_tracker import TrainingTracker
 from src.infrastructure.tensorflow.dataset_adapter import TensorFlowDatasetAdapter
 from src.infrastructure.tensorflow.networks import get_unet
 from src.infrastructure.tensorflow.utils import offset_cosine_diffusion_schedule
@@ -81,6 +82,7 @@ class TensorFlowDiffusionModel(Model):
             weight_decay: float = 1e-4,
             epochs: int = 1,
             load_weights_path: Optional[str] = None,
+            tracker: Optional[TrainingTracker] = None,
     ) -> None:
         """
         Initialize the TensorFlow diffusion model.
@@ -107,6 +109,8 @@ class TensorFlowDiffusionModel(Model):
             Number of training epochs. Default is 1.
         load_weights_path : str, optional
             Optional path to weights file for the U-Net.
+        tracker : TrainingTracker, optional
+            Optional tracker for training progress and metrics.
         """
         self.image_size = image_size
         self.num_channels = num_channels
@@ -114,6 +118,7 @@ class TensorFlowDiffusionModel(Model):
         self.ema = ema
         self.plot_diffusion_steps = plot_diffusion_steps
         self.epochs = epochs
+        self.tracker = tracker
 
         # Network and EMA copy
         self.network = get_unet(
@@ -123,8 +128,13 @@ class TensorFlowDiffusionModel(Model):
         )
         self.ema_network = keras.models.clone_model(self.network)
 
-        # Normalizer (channel-last)
+        # Normalizer (channel-last) - will be adapted during training
         self.normalizer = layers.Normalization(axis=-1)
+        # Default values for generation without training (images in [0, 1])
+        self._default_mean = 0.5
+        self._default_std = 0.25
+        # Track if normalizer has been adapted
+        self._normalizer_adapted = False
 
         # Optimizer and loss
         self.optimizer = optimizers.AdamW(
@@ -158,7 +168,7 @@ class TensorFlowDiffusionModel(Model):
     # Public API (domain interface)
     # -------------------------------------------------------------------------
 
-    def train(self, dataset: Dataset) -> None:
+    def train(self, dataset: Dataset, dataset_name: str | None = None) -> None:
         """
         Train the diffusion model on a domain Dataset.
 
@@ -166,6 +176,8 @@ class TensorFlowDiffusionModel(Model):
         ----------
         dataset : Dataset
             Dataset implementing the domain `Dataset` protocol.
+        dataset_name : str | None, optional
+            Name of the dataset (for tracking/logging purposes).
         """
         # Basic compatibility checks with domain dataset
         if dataset.image_size != self.image_size:
@@ -187,11 +199,43 @@ class TensorFlowDiffusionModel(Model):
 
         # Adapt normalizer statistics on the full dataset
         self.normalizer.adapt(tf_dataset)
+        self._normalizer_adapted = True
+
+        # Calculate total batches for progress tracking
+        # Note: drop_remainder=True in adapter means incomplete batches are dropped
+        total_batches = len(dataset) // self.batch_size
+
+        # Notify tracker of training start
+        if self.tracker is not None:
+            self.tracker.on_training_start(
+                total_epochs=self.epochs,
+                total_batches=total_batches,
+                dataset_name=dataset_name,
+            )
 
         # Training loop
-        for _ in range(self.epochs):
-            for images in tf_dataset:
-                self._train_on_batch(images)
+        for epoch in range(self.epochs):
+            if self.tracker is not None:
+                self.tracker.on_epoch_start(epoch)
+
+            epoch_losses = []
+            for batch_idx, images in enumerate(tf_dataset):
+                loss = self._train_on_batch(images)
+                epoch_losses.append(float(loss))
+
+                if self.tracker is not None:
+                    self.tracker.on_batch_end(epoch, batch_idx, float(loss))
+
+            avg_loss = sum(epoch_losses) / len(epoch_losses) if epoch_losses else 0.0
+            if self.tracker is not None:
+                self.tracker.on_epoch_end(epoch, avg_loss)
+                # Generate sample images for visualization
+                sample_images = self.generate_images(5)
+                self.tracker.on_epoch_end_images(epoch, sample_images)
+
+        # Notify tracker of training end
+        if self.tracker is not None:
+            self.tracker.on_training_end()
 
     def generate_images(self, n: int) -> Tensor:
         """
@@ -219,6 +263,43 @@ class TensorFlowDiffusionModel(Model):
         generated = self._denormalize(generated)
         return generated.numpy()
 
+    def save(self, path: str) -> None:
+        """
+        Save the model weights to disk.
+
+        Saves the EMA (Exponential Moving Average) network weights,
+        which are used for generation and typically produce better results.
+
+        Parameters
+        ----------
+        path : str
+            Path where the model weights will be saved.
+            Should end with '.weights.h5' for Keras compatibility.
+        """
+        # Build network if not already built
+        if not self.ema_network.built:
+            dummy_images = tf.zeros(
+                (1, self.image_size, self.image_size, self.num_channels),
+                dtype=tf.float32,
+            )
+            dummy_noise_var = tf.zeros((1, 1, 1, 1), dtype=tf.float32)
+            _ = self.ema_network([dummy_images, dummy_noise_var])
+
+        self.ema_network.save_weights(path)
+
+    def load(self, path: str) -> None:
+        """
+        Load model weights from disk.
+
+        Loads weights into both the main network and the EMA network.
+
+        Parameters
+        ----------
+        path : str
+            Path to the saved model weights file.
+        """
+        self.load_weights(self.image_size, path, self.num_channels)
+
     # -------------------------------------------------------------------------
     # Internal helpers: denoising and diffusion
     # -------------------------------------------------------------------------
@@ -237,7 +318,14 @@ class TensorFlowDiffusionModel(Model):
         tf.Tensor
             Images clipped to [0, 1].
         """
-        images = self.normalizer.mean + images * tf.sqrt(self.normalizer.variance)
+        if self._normalizer_adapted:
+            mean = self.normalizer.mean
+            std = tf.sqrt(self.normalizer.variance)
+        else:
+            # Use default values for generation without prior training
+            mean = self._default_mean
+            std = self._default_std
+        images = mean + images * std
         return tf.clip_by_value(images, 0.0, 1.0)
 
     def _denoise(

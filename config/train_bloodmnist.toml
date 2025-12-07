@@ -1,0 +1,18 @@
+# Training configuration for BloodMNIST dataset
+# Usage: python train_model.py -c config/train_bloodmnist.toml
+
+[training]
+dataset = "BloodMNIST"
+output = "models/bloodmnist.weights.h5"
+
+# Data settings
+# max_samples = 1000  # Uncomment to limit samples
+image_size = 64       # Must be divisible by 8
+
+# Training hyperparameters
+epochs = 50
+batch_size = 8        # Reduce if GPU memory is limited
+learning_rate = 1e-3
+
+# Output for sample images during training
+samples_output_dir = "./output/bloodmnist_samples"

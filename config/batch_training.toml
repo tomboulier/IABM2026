@@ -1,0 +1,48 @@
+# Batch training configuration
+# Usage: python train_model.py -c config/batch_training.toml --batch
+
+[batch.defaults]
+# Default values applied to all trainings (can be overridden per training)
+image_size = 28
+epochs = 1
+batch_size = 8
+learning_rate = 1e-3
+samples_output_dir = "./outputs"
+output_dir = "models"
+
+# Each [[batch.trainings]] defines one training run
+# Output filenames are auto-generated if not specified
+
+[[batch.trainings]]
+dataset = "DermaMNIST"
+
+[[batch.trainings]]
+dataset = "BloodMNIST"
+
+[[batch.trainings]]
+dataset = "RetinaMNIST"
+
+[[batch.trainings]]
+dataset = "BreastMNIST"
+
+[[batch.trainings]]
+dataset = "TissueMNIST"
+
+[[batch.trainings]]
+dataset = "OrganAMNIST"
+
+[[batch.trainings]]
+dataset = "OrganCMNIST"
+
+[[batch.trainings]]
+dataset = "OrganSMNIST"
+
+[[batch.trainings]]
+dataset = "PneumoniaMNIST"
+
+# Example with custom settings (overrides defaults)
+# [[batch.trainings]]
+# dataset = "OrganMNIST3D"
+# epochs = 20
+# max_samples = 5000
+# output = "models/custom_organ.weights.h5"

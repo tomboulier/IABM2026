@@ -172,21 +172,8 @@ def UpBlock(width, block_depth):
 
         for _ in range(block_depth):
             # Retrieve skip connection from encoder (LIFO order)
-            skip = skips.pop()
-
-            # Handle shape mismatch by cropping skip connection to match x
-            # This can occur due to rounding in pooling/upsampling operations
-            skip_shape = skip.shape
-            x_shape = x.shape
-            if skip_shape[1] != x_shape[1] or skip_shape[2] != x_shape[2]:
-                # Crop skip to match x dimensions (remove excess pixels)
-                crop_h = skip_shape[1] - x_shape[1]
-                crop_w = skip_shape[2] - x_shape[2]
-                if crop_h > 0 or crop_w > 0:
-                    skip = layers.Cropping2D(cropping=((0, crop_h), (0, crop_w)))(skip)
-
             # Concatenate upsampled features with skip connection
-            x = layers.Concatenate()([x, skip])
+            x = layers.Concatenate()([x, skips.pop()])
             # Apply residual block to process combined features
             x = ResidualBlock(width)(x)
         return x
@@ -240,6 +227,33 @@ def sinusoidal_embedding(x, noise_embedding_size: int):
     return embeddings
 
 
+def _compute_num_levels(image_size: int, min_resolution: int = 4) -> int:
+    """
+    Compute the number of downsampling levels based on image size.
+
+    The number of levels is chosen so that the smallest feature map
+    has at least `min_resolution` pixels on each side.
+
+    Parameters
+    ----------
+    image_size : int
+        Size of the input images (assumes square images).
+    min_resolution : int, optional
+        Minimum spatial resolution at the bottleneck. Default is 4.
+
+    Returns
+    -------
+    int
+        Number of downsampling levels (between 1 and 4).
+    """
+    num_levels = 0
+    size = image_size
+    while size >= min_resolution * 2 and num_levels < 4:
+        size //= 2
+        num_levels += 1
+    return max(1, num_levels)
+
+
 def get_unet(image_size: int, noise_embedding_size: int, num_channels: int = 1):
     """
     Construct a U-Net model for noise prediction in diffusion models.
@@ -250,10 +264,14 @@ def get_unet(image_size: int, noise_embedding_size: int, num_channels: int = 1):
     - A decoder path that upsamples and combines with skip connections
     - Time embedding injection to condition on diffusion timestep
 
+    The depth of the network adapts automatically to the image size to ensure
+    that spatial dimensions remain compatible across skip connections.
+
     Parameters
     ----------
     image_size : int
-        Size of the input images (assumes square images).
+        Size of the input images (assumes square images). Must be a power of 2
+        or at least divisible by 2 for each downsampling level.
     noise_embedding_size : int
         Dimension of the sinusoidal time embedding vector.
     num_channels : int, optional
@@ -268,12 +286,20 @@ def get_unet(image_size: int, noise_embedding_size: int, num_channels: int = 1):
 
     Notes
     -----
-    The model uses:
-    - 32 → 64 → 96 channels in encoder
-    - 128 channels in bottleneck
-    - 96 → 64 → 32 channels in decoder
-    - Skip connections between encoder and decoder at each resolution
+    Channel progression depends on depth:
+    - 1 level: 32 → bottleneck → 32
+    - 2 levels: 32 → 64 → bottleneck → 64 → 32
+    - 3 levels: 32 → 64 → 96 → bottleneck → 96 → 64 → 32
+    - 4 levels: 32 → 64 → 96 → 128 → bottleneck → 128 → 96 → 64 → 32
     """
+    # Channel widths for each level (up to 4 levels)
+    channel_widths = [32, 64, 96, 128]
+    bottleneck_width = 128
+    block_depth = 2
+
+    # Compute number of levels based on image size
+    num_levels = _compute_num_levels(image_size)
+
     # Input for noisy images at current diffusion step
     noisy_images = layers.Input(shape=(image_size, image_size, num_channels))
 
@@ -303,27 +329,23 @@ def get_unet(image_size: int, noise_embedding_size: int, num_channels: int = 1):
     # Encoder: progressively downsample and increase channels
     # Skip connections are stored in the 'skips' list
     skips = []
-    x = DownBlock(32, block_depth=2)([x, skips])  # Output: 32 channels, H/2 x W/2
-    x = DownBlock(64, block_depth=2)([x, skips])  # Output: 64 channels, H/4 x W/4
-    x = DownBlock(96, block_depth=2)([x, skips])  # Output: 96 channels, H/8 x W/8
+    for level in range(num_levels):
+        width = channel_widths[level]
+        x = DownBlock(width, block_depth=block_depth)([x, skips])
 
     # Bottleneck: process features at lowest resolution
-    x = ResidualBlock(128)(x)  # 128 channels, H/8 x W/8
-    x = ResidualBlock(128)(x)
+    x = ResidualBlock(bottleneck_width)(x)
+    x = ResidualBlock(bottleneck_width)(x)
 
     # Decoder: progressively upsample and decrease channels
-    # Skip connections from encoder are concatenated at each level
-    x = UpBlock(96, block_depth=2)([x, skips])  # Output: 96 channels, H/4 x W/4
-    x = UpBlock(64, block_depth=2)([x, skips])  # Output: 64 channels, H/2 x W/2
-    x = UpBlock(32, block_depth=2)([x, skips])  # Output: 32 channels, H x W
+    # Skip connections from encoder are concatenated at each level (LIFO order)
+    for level in range(num_levels - 1, -1, -1):
+        width = channel_widths[level]
+        x = UpBlock(width, block_depth=block_depth)([x, skips])
 
     # Final projection: map to output noise prediction (same channels as input)
     # Initialize with zeros so initial predictions are near zero
     x = layers.Conv2D(num_channels, kernel_size=1, kernel_initializer="zeros")(x)
-
-    # Ensure output size matches input size exactly
-    # (handles any rounding issues from pooling/upsampling)
-    x = layers.Resizing(image_size, image_size, interpolation="bilinear")(x)
 
     unet = models.Model([noisy_images, noise_variances], x, name="unet")
     return unet

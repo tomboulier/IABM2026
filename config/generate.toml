@@ -1,0 +1,11 @@
+# Generation configuration
+# Usage: python generate_images.py -c config/generate.toml
+
+[generation]
+weights = "models/pathmnist.weights.h5"
+output = "./generated_images"
+
+# Generation settings
+num_images = 16
+image_size = 64        # Must match the trained model
+diffusion_steps = 20   # More steps = better quality but slower
