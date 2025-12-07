@@ -192,32 +192,84 @@ class GenerationConfiguration:
 
 @dataclass
 class ExperimentConfiguration:
+    """
+    Configuration for running experiments with pre-trained models.
+
+    Attributes
+    ----------
+    datasets : list[str]
+        List of dataset names to process.
+    weights : dict[str, str]
+        Mapping of dataset name to weights file path.
+    max_samples : int | None
+        Maximum samples per dataset (None = all).
+    image_size : int
+        Image size for loading datasets and model.
+    num_generated_images : int
+        Number of images to generate for similarity computation.
+    results_output : str
+        Path to save results CSV file.
+    variability_metric : str
+        Type of variability metric to use.
+    similarity_metric : str
+        Type of similarity metric to use.
+    model_type : str
+        Type of generative model.
+    """
+
     datasets: list[str]
+    weights: dict[str, str] | None = None
     max_samples: int | None = None
-    image_size: int = 224
+    image_size: int = 28
+    num_generated_images: int = 100
+    results_output: str = "results/experiment_results.csv"
     variability_metric: str = "resnet_msd"
     similarity_metric: str = "fid"
     model_type: str = "diffusion"
+
+    def get_weights_path(self, dataset_name: str) -> str | None:
+        """
+        Get the weights file path for a given dataset.
+
+        Parameters
+        ----------
+        dataset_name : str
+            Name of the dataset.
+
+        Returns
+        -------
+        str | None
+            Path to weights file, or None if not configured.
+        """
+        if self.weights is None:
+            return None
+        return self.weights.get(dataset_name)
 
     @classmethod
     def load(cls, config_path: str) -> "ExperimentConfiguration":
         """
         Load experiment configuration from a TOML file.
-        
-        Parameters:
-            config_path (str): Filesystem path to a TOML file containing an "experiment" table.
-        
-        Returns:
-            ExperimentConfiguration: Instance populated from the "experiment" table; fields not present use their dataclass defaults.
-        
-        Raises:
-            FileNotFoundError: If no file exists at `config_path`.
+
+        Parameters
+        ----------
+        config_path : str
+            Filesystem path to a TOML file containing an "experiment" table.
+
+        Returns
+        -------
+        ExperimentConfiguration
+            Instance populated from the "experiment" table.
+
+        Raises
+        ------
+        FileNotFoundError
+            If no file exists at `config_path`.
         """
         if not os.path.exists(config_path):
             raise FileNotFoundError(f"Configuration file not found at {config_path}")
-            
+
         with open(config_path, "rb") as f:
             data = tomllib.load(f)
-            
+
         experiment_data = data.get("experiment", {})
         return cls(**experiment_data)
