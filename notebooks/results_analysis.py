@@ -12,14 +12,12 @@ def _():
 
 @app.cell
 def _(mo):
-    mo.md(
-        r"""
-        # MedMNIST Experiment Results Analysis
+    mo.md(r"""
+    # MedMNIST Experiment Results Analysis
 
-        This notebook analyzes the results of the variability and similarity experiments
-        on MedMNIST datasets using pre-trained diffusion models.
-        """
-    )
+    This notebook analyzes the results of the variability and similarity experiments
+    on MedMNIST datasets using pre-trained diffusion models.
+    """)
     return
 
 
@@ -32,26 +30,27 @@ def _():
 
 @app.cell
 def _(pd):
-    # Load experiment results
-    results_path = "../results/experiment_results.csv"
+    from pathlib import Path
+
+    # Load experiment results (use path relative to this notebook file)
+    notebook_dir = Path(__file__).parent
+    results_path = notebook_dir / "../results/experiment_results.csv"
     df = pd.read_csv(results_path)
     df
-    return df, results_path
+    return Path, df, notebook_dir, results_path
 
 
 @app.cell
 def _(mo):
-    mo.md(
-        r"""
-        ## Variability vs Similarity
+    mo.md(r"""
+    ## Variability vs Similarity
 
-        Scatter plot showing the relationship between dataset variability
-        (Mean Squared Distance to Centroid) and similarity score (FID).
+    Scatter plot showing the relationship between dataset variability
+    (Mean Squared Distance to Centroid) and similarity score (FID).
 
-        - **Variability**: Higher values indicate more diverse datasets
-        - **Similarity (FID)**: Lower values indicate generated images closer to real ones
-        """
-    )
+    - **Variability**: Higher values indicate more diverse datasets
+    - **Similarity (FID)**: Lower values indicate generated images closer to real ones
+    """)
     return
 
 
@@ -86,21 +85,19 @@ def _(df, plt):
 
     plt.tight_layout()
     fig
-    return ax, fig, idx, row, scatter
+    return
 
 
 @app.cell
 def _(df, mo):
-    mo.md(
-        f"""
-        ## Summary Statistics
+    mo.md(f"""
+    ## Summary Statistics
 
-        | Metric | Min | Max | Mean | Std |
-        |--------|-----|-----|------|-----|
-        | Variability | {df['variability'].min():.2f} | {df['variability'].max():.2f} | {df['variability'].mean():.2f} | {df['variability'].std():.2f} |
-        | Similarity (FID) | {df['similarity'].min():.2f} | {df['similarity'].max():.2f} | {df['similarity'].mean():.2f} | {df['similarity'].std():.2f} |
-        """
-    )
+    | Metric | Min | Max | Mean | Std |
+    |--------|-----|-----|------|-----|
+    | Variability | {df['variability'].min():.2f} | {df['variability'].max():.2f} | {df['variability'].mean():.2f} | {df['variability'].std():.2f} |
+    | Similarity (FID) | {df['similarity'].min():.2f} | {df['similarity'].max():.2f} | {df['similarity'].mean():.2f} | {df['similarity'].std():.2f} |
+    """)
     return
 
 
