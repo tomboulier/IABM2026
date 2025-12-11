@@ -67,8 +67,8 @@ variance des caractéristiques.
 Ces résultats préliminaires suggèrent que la relation entre diversité d'un jeu
 de données et facilité d'apprentissage génératif est plus complexe qu'anticipée.
 Plusieurs limites doivent être considérées : l'entraînement limité à une seule
-époque, la faible résolution des images (28$\times$28), et le choix de la
-métrique de variabilité. Des tests exploratoires avec 10 époques sur RetinaMNIST
+itération, la faible résolution des images (28$\times$28), et le choix de la
+métrique de variabilité. Des tests exploratoires avec 10 itérations sur RetinaMNIST
 montrent une amélioration visuelle notable par rapport au bruit observé en
 figure 1. Les travaux en cours visent à mener des campagnes de calcul plus
 étendues sur une plateforme de calcul haute performance, avec des entraînements
@@ -82,7 +82,7 @@ architectures génératives telles que les GAN \cite{gan} et les VAE \cite{vae}.
     \centering
     \includegraphics[width=\linewidth]{figure_comparison.pdf}
     \caption{Comparaison entre images réelles (gauche) et générées après 1
-    époque (droite) pour trois datasets représentatifs. OrganCMNIST (FID=139)
+    itération (droite) pour trois datasets représentatifs. OrganCMNIST (FID=139)
     produit des formes reconnaissables, BloodMNIST (FID=313) préserve la
     structure cellulaire, tandis que RetinaMNIST (FID=574) génère du bruit
     malgré une variabilité modérée.}
