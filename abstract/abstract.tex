@@ -22,13 +22,13 @@ CHU Grenoble Alpes, Grenoble, France}
 \textbf{Contexte et motivation.}
 L'entraînement de modèles génératifs \cite{ddpm,foster2023generative} en imagerie
 médicale soulève des enjeux d'optimisation des ressources : coût computationnel et
-empreinte environnementale d'une part, et principe de minimisation des données
-imposé par le RGPD d'autre part. Pouvoir estimer a priori la difficulté
-d'apprentissage d'un jeu de données permettrait de mieux calibrer les ressources
-nécessaires. Nous avons formulé l'hypothèse que la variabilité intrinsèque d'un
-jeu de données pourrait constituer un tel indicateur prédictif de la qualité de
-génération. En particulier, des jeux de données plus homogènes pourraient
-faciliter l'apprentissage du modèle génératif.
+empreinte environnementale \cite{strubell2019energy} d'une part, et principe de
+minimisation des données imposé par le RGPD \cite{rgpd} d'autre part. Pouvoir
+estimer a priori la difficulté d'apprentissage d'un jeu de données permettrait de
+mieux calibrer les ressources nécessaires. Nous avons formulé l'hypothèse que la
+variabilité intrinsèque d'un jeu de données pourrait constituer un tel indicateur
+prédictif de la qualité de génération. En particulier, des jeux de données plus
+homogènes pourraient faciliter l'apprentissage du modèle génératif.
 
 \textbf{Méthode.}
 Nous proposons un cadre de développement open source, disponible sur
@@ -43,38 +43,37 @@ architecture modulaire permet d'intégrer d'autres modèles génératifs ou mét
 La variabilité est quantifiée par la distance quadratique moyenne (DQM) des
 vecteurs de caractéristiques extraits par un ResNet-18 \cite{resnet} pré-entraîné
 sur ImageNet par rapport au centroïde du jeu de données. La similarité est évaluée
-via le score FID \cite{fid}. Les expériences
-préliminaires ont été réalisées sur une station de travail équipée d'un
-processeur Intel Core i7-10850H, 32 Go de RAM et un GPU NVIDIA Quadro T1000
-(4 Go), avec des temps d'entraînement variant de quelques minutes à environ
-2 heures par époque selon la taille du jeu de données. Nous avons entraîné des
-modèles DDPM (1 époque, images 28$\times$28) sur 9 jeux de données en 2D de MedMNIST
-couvrant diverses modalités : microscopie, radiographie thoracique, rétinographie,
-mammographie, extraits de scanners (coupes axiales/coronales/sagittales) et
-photographie (dermatologie).
+via le score FID \cite{fid}.
 
 \textbf{Résultats préliminaires.}
-Les valeurs de variabilité obtenues varient de 67,0 (TissueMNIST) à 135,1
-(OrganAMNIST), tandis que les scores FID s'échelonnent de 138,9 (OrganCMNIST) à
-574,0 (RetinaMNIST). Contrairement à notre hypothèse initiale, nous n'observons
-pas de corrélation claire entre variabilité et qualité de génération. Le cas de
-RetinaMNIST est particulièrement intéressant : malgré une variabilité modérée
-(85,0), ce jeu de données présente le pire score FID, suggérant que la
-complexité structurelle des images rétiniennes dépasse la simple mesure de
-variance des caractéristiques.
+Nous avons entraîné des modèles DDPM (1 itération, images 28$\times$28) sur 9 jeux
+de données 2D de MedMNIST couvrant diverses modalités : microscopie, radiographie
+thoracique, rétinographie, mammographie, scanners (coupes axiales, coronales,
+sagittales) et photographie (dermatologie). Les expériences ont été réalisées sur
+une station de travail équipée d'un processeur Intel Core i7-10850H, 32 Go de RAM
+et un GPU NVIDIA Quadro T1000 (4 Go). Les temps d'entraînement varient de quelques
+minutes à environ 2 heures par itération selon la taille du jeu de données. Les
+résultats sont présentés dans le tableau 1 et la figure 1. Les valeurs de
+variabilité s'échelonnent de 67,0 (TissueMNIST) à 135,1 (OrganAMNIST), et les
+scores FID de 138,9 (OrganCMNIST) à 574,0 (RetinaMNIST).
 
 \textbf{Discussion et perspectives.}
-Ces résultats préliminaires suggèrent que la relation entre diversité d'un jeu
-de données et facilité d'apprentissage génératif est plus complexe qu'anticipée.
-Plusieurs limites doivent être considérées : l'entraînement limité à une seule
-itération, la faible résolution des images (28$\times$28), et le choix de la
-métrique de variabilité. Des tests exploratoires avec 10 itérations sur RetinaMNIST
-montrent une amélioration visuelle notable par rapport au bruit observé en
-figure 1. Les travaux en cours visent à mener des campagnes de calcul plus
-étendues sur une plateforme de calcul haute performance, avec des entraînements
-plus longs, des résolutions supérieures (64$\times$64, 128$\times$128), des
-métriques alternatives de variabilité et de similarité, ainsi que d'autres
-architectures génératives telles que les GAN \cite{gan} et les VAE \cite{vae}.
+Contrairement à notre hypothèse initiale, nous n'observons pas de corrélation
+claire entre variabilité et qualité de génération. Le cas de RetinaMNIST est
+particulièrement intéressant : malgré une variabilité modérée (85,0), ce jeu de
+données présente le pire score FID, suggérant que la complexité structurelle des
+images dépasse la simple mesure de variance des caractéristiques. Ces résultats
+préliminaires indiquent que la relation entre diversité d'un jeu de données et
+facilité d'apprentissage génératif est plus complexe qu'anticipée. Plusieurs
+limites doivent être considérées : l'entraînement limité à une seule itération, la
+faible résolution des images (28$\times$28), et le choix de la métrique de
+variabilité. Des tests exploratoires avec 10 itérations sur RetinaMNIST montrent
+une amélioration visuelle notable par rapport au bruit observé en figure 1. Les
+travaux en cours visent à mener des campagnes de calcul plus étendues sur une
+plateforme de calcul haute performance, avec des entraînements plus longs, des
+résolutions supérieures (64$\times$64, 128$\times$128), des métriques alternatives,
+les jeux de données 3D de MedMNIST, ainsi que d'autres architectures génératives
+telles que les GAN \cite{gan} et les VAE \cite{vae}.
 
 \section*{Figures et Tableaux}
 
