@@ -31,7 +31,7 @@ génération. En particulier, des jeux de données plus homogènes pourraient
 faciliter l'apprentissage du modèle génératif.
 
 \textbf{Méthode.}
-Nous proposons un cadre de développement \it{open source}, disponible sur
+Nous proposons un cadre de développement open source, disponible sur
 GitHub\footnote{\url{https://github.com/tomboulier/IABM2026}}, permettant de
 mesurer (1) la variabilité d'un jeu de données et (2) la similarité entre images
 réelles et générées. Le code, structuré selon les principes de la Clean
@@ -42,11 +42,15 @@ est implémenté en TensorFlow, adapté de \cite{foster2023generative}. Cette
 architecture modulaire permet d'intégrer d'autres modèles génératifs ou métriques.
 La variabilité est quantifiée par la distance quadratique moyenne (MSD) des
 vecteurs de caractéristiques extraits par un ResNet-18 \cite{resnet} pré-entraîné
-sur ImageNet par rapport au centroïde du jeu de données. La similarité est
-évaluée via le score FID \cite{fid}. Nous avons entraîné des modèles DDPM
-(1 époque, images 28$\times$28) sur 9 jeux de données MedMNIST couvrant diverses
-modalités : tissus, pneumonie, rétine, sang, sein, organes (3 coupes) et
-dermatologie.
+sur ImageNet par rapport au centroïde du jeu de données. La similarité est évaluée
+via le score FID \cite{fid}. Les expériences
+préliminaires ont été réalisées sur une station de travail équipée d'un
+processeur Intel Core i7-10850H, 32 Go de RAM et un GPU NVIDIA Quadro T1000
+(4 Go), avec des temps d'entraînement variant de quelques minutes à environ
+2 heures par époque selon la taille du jeu de données. Nous avons entraîné des
+modèles DDPM (1 époque, images 28$\times$28) sur 9 jeux de données MedMNIST
+couvrant diverses modalités : tissus, pneumonie, rétine, sang, sein, organes
+(3 coupes) et dermatologie.
 
 \textbf{Résultats préliminaires.}
 Les valeurs de variabilité obtenues varient de 67,0 (TissueMNIST) à 135,1
@@ -63,9 +67,13 @@ Ces résultats préliminaires suggèrent que la relation entre diversité d'un j
 de données et facilité d'apprentissage génératif est plus complexe qu'anticipée.
 Plusieurs limites doivent être considérées : l'entraînement limité à une seule
 époque, la faible résolution des images (28$\times$28), et le choix de la
-métrique de variabilité. Les travaux futurs exploreront des entraînements plus
-longs, des résolutions supérieures, et des métriques alternatives capturant
-mieux la complexité structurelle des images médicales.
+métrique de variabilité. Des tests exploratoires avec 10 époques sur RetinaMNIST
+montrent une amélioration visuelle notable par rapport au bruit observé en
+figure 1. Les travaux en cours visent à mener des campagnes de calcul plus
+étendues sur une plateforme de calcul haute performance, avec des entraînements
+plus longs, des résolutions supérieures (64$\times$64, 128$\times$128), des
+métriques alternatives de variabilité et de similarité, ainsi que d'autres
+architectures génératives telles que les GAN \cite{gan} et les VAE \cite{vae}.
 
 \section*{Figures et Tableaux}
 
