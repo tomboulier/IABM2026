@@ -20,15 +20,14 @@ CHU Grenoble Alpes, Grenoble, France}
 \section*{Résumé}
 
 \textbf{Contexte et motivation.}
-Les modèles génératifs de type diffusion (DDPM) ont démontré des performances
-remarquables dans la synthèse d'images réalistes. Lors de l'adaptation d'un
-tutoriel sur ces modèles au domaine de l'imagerie médicale, nous avons observé
-empiriquement que les images générées après entraînement sur le jeu de données
-ChestMNIST semblaient plus réalistes après seulement quelques époques que celles
-générées sur des jeux de données non médicaux comme Oxford Flowers. Cette
-observation nous a conduits à formuler l'hypothèse suivante : la variabilité
-intrinsèque d'un jeu de données d'entraînement pourrait influencer la qualité
-des images générées par un modèle de diffusion.
+L'entraînement de modèles génératifs en imagerie médicale soulève des enjeux
+d'optimisation des ressources : coût computationnel et empreinte environnementale
+d'une part, et principe de minimisation des données imposé par le RGPD d'autre
+part. Pouvoir estimer a priori la difficulté d'apprentissage d'un jeu de données
+permettrait de mieux calibrer les ressources nécessaires. Nous avons formulé
+l'hypothèse que la variabilité intrinsèque d'un jeu de données pourrait constituer
+un tel indicateur prédictif de la qualité de génération. En particulier, des jeux
+de données plus homogènes pourraient faciliter l'apprentissage du modèle génératif.
 
 \textbf{Méthode.}
 Nous avons développé un pipeline expérimental permettant de mesurer (1) la
