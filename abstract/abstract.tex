@@ -59,21 +59,18 @@ scores FID de 138,9 (OrganCMNIST) à 574,0 (RetinaMNIST).
 
 \textbf{Discussion et perspectives.}
 Contrairement à notre hypothèse initiale, nous n'observons pas de corrélation
-claire entre variabilité et qualité de génération. Le cas de RetinaMNIST est
-particulièrement intéressant : malgré une variabilité modérée (85,0), ce jeu de
-données présente le pire score FID, suggérant que la complexité structurelle des
-images dépasse la simple mesure de variance des caractéristiques. Ces résultats
-préliminaires indiquent que la relation entre diversité d'un jeu de données et
-facilité d'apprentissage génératif est plus complexe qu'anticipée. Plusieurs
-limites doivent être considérées : l'entraînement limité à une seule itération, la
-faible résolution des images (28$\times$28), et le choix de la métrique de
-variabilité. Des tests exploratoires avec 10 itérations sur RetinaMNIST montrent
-une amélioration visuelle notable par rapport au bruit observé en figure 1. Les
-travaux en cours visent à mener des campagnes de calcul plus étendues sur une
-plateforme de calcul haute performance, avec des entraînements plus longs, des
-résolutions supérieures (64$\times$64, 128$\times$128), des métriques alternatives,
-les jeux de données 3D de MedMNIST, ainsi que d'autres architectures génératives
-telles que les GAN \cite{gan} et les VAE \cite{vae}.
+claire entre variabilité et qualité de génération. L'analyse visuelle (figure 1)
+confirme les scores FID élevés pour RetinaMNIST, mais révèle des incohérences
+entre FID et qualité perçue pour d'autres datasets (BloodMNIST vs OrganCMNIST).
+Ces résultats suggèrent que la relation entre diversité des données et facilité
+d'apprentissage génératif est plus complexe qu'anticipée. Plusieurs limites doivent
+être considérées : entraînement limité à une seule itération, faible résolution
+(28$\times$28), et choix de la métrique de variabilité. Des tests avec 10 itérations
+sur RetinaMNIST montrent une amélioration notable comparée au résultat actuel qui
+n'est que de la génération de bruit. Les travaux en cours visent des
+campagnes de calcul sur plateforme HPC, avec des entraînements plus longs, des
+résolutions supérieures, des métriques alternatives, les datasets 3D de MedMNIST,
+et d'autres architectures génératives (GAN \cite{gan}, VAE \cite{vae}).
 
 \section*{Figures et Tableaux}
 
@@ -81,10 +78,8 @@ telles que les GAN \cite{gan} et les VAE \cite{vae}.
     \centering
     \includegraphics[width=\linewidth]{figure_comparison.pdf}
     \caption{Comparaison entre images réelles (gauche) et générées après 1
-    itération (droite) pour trois datasets représentatifs. OrganCMNIST (FID=139)
-    produit des formes reconnaissables, BloodMNIST (FID=313) préserve la
-    structure cellulaire, tandis que RetinaMNIST (FID=574) génère du bruit
-    malgré une variabilité modérée.}
+    itération (droite) pour trois datasets : OrganCMNIST, BloodMNIST et
+    RetinaMNIST.}
 \end{figure}
 
 \begin{table}[h!]
