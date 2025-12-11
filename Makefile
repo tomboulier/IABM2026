@@ -1,4 +1,4 @@
-.PHONY: install run test docker-build docker-run clean abstract abstract-clean
+.PHONY: install run test docker-build docker-run clean abstract abstract-clean abstract-count
 
 # Environment setup using uv
 install:
@@ -35,3 +35,15 @@ abstract:
 # Clean abstract build files
 abstract-clean:
 	cd abstract && rm -f *.aux *.bbl *.blg *.log *.out *.toc *.fls *.fdb_latexmk *.synctex.gz
+
+# Count words and characters in abstract (excluding LaTeX commands)
+abstract-count:
+	@echo "=== Abstract word/character count ==="
+	@sed -n '/\\section\*{Résumé}/,/\\section\*{Figures/p' abstract/abstract.tex | \
+		grep -v '\\section' | \
+		sed 's/\\textbf{[^}]*}//g; s/\\cite{[^}]*}//g; s/\\\$$[^$$]*\$$//g; s/\\[a-zA-Z]*//g; s/[{}]//g' | \
+		tr -s ' \n' ' ' > /tmp/abstract_text.txt
+	@echo "Characters (with spaces): $$(cat /tmp/abstract_text.txt | wc -c)"
+	@echo "Characters (no spaces):   $$(cat /tmp/abstract_text.txt | tr -d ' ' | wc -c)"
+	@echo "Words:                    $$(cat /tmp/abstract_text.txt | wc -w)"
+	@echo "=== Limit: 4000 chars / ~500 words ==="
