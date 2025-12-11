@@ -40,7 +40,7 @@ d'apprentissage : le chargement des données s'appuie sur MedMNIST
 \cite{medmnistv2} via PyTorch, tandis que le modèle de diffusion DDPM \cite{ddpm}
 est implémenté en TensorFlow, adapté de \cite{foster2023generative}. Cette
 architecture modulaire permet d'intégrer d'autres modèles génératifs ou métriques.
-La variabilité est quantifiée par la distance quadratique moyenne (MSD) des
+La variabilité est quantifiée par la distance quadratique moyenne (DQM) des
 vecteurs de caractéristiques extraits par un ResNet-18 \cite{resnet} pré-entraîné
 sur ImageNet par rapport au centroïde du jeu de données. La similarité est évaluée
 via le score FID \cite{fid}. Les expériences
@@ -104,7 +104,7 @@ architectures génératives telles que les GAN \cite{gan} et les VAE \cite{vae}.
         OrganAMNIST & 34\,561 & 135,1 & 191,2 \\
         \hline
     \end{tabular}
-    \caption{Variabilité (MSD ResNet-18) et score FID pour 9 datasets MedMNIST.
+    \caption{Variabilité (DQM ResNet-18) et score FID pour 9 datasets MedMNIST.
     Un FID plus bas indique une meilleure qualité de génération.}
 \end{table}
 
