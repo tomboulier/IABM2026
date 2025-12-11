@@ -30,16 +30,20 @@ un tel indicateur prédictif de la qualité de génération. En particulier, des
 de données plus homogènes pourraient faciliter l'apprentissage du modèle génératif.
 
 \textbf{Méthode.}
-Nous avons développé un pipeline expérimental permettant de mesurer (1) la
-variabilité d'un jeu de données et (2) la similarité entre images réelles et
-générées. La variabilité est quantifiée par la distance quadratique moyenne
-(MSD) des vecteurs de caractéristiques extraits par un ResNet-18 pré-entraîné
-sur ImageNet par rapport au centroïde du jeu de données. La similarité est
-évaluée via le score FID (Fréchet Inception Distance), une métrique standard
-pour évaluer la qualité des images générées. Nous avons entraîné des modèles
-DDPM (1 époque, images 28$\times$28) sur 9 jeux de données de la collection
-MedMNIST \cite{medmnistv2} couvrant diverses modalités d'imagerie médicale :
-tissus, pneumonie, rétine, sang, sein, organes (3 coupes) et dermatologie.
+Nous proposons un framework open source permettant de mesurer (1) la variabilité
+d'un jeu de données et (2) la similarité entre images réelles et générées. Le
+code, structuré selon les principes de la Clean Architecture \cite{cleanarchitecture},
+est indépendant des frameworks d'apprentissage : le chargement des données
+s'appuie sur MedMNIST \cite{medmnistv2} via PyTorch, tandis que le modèle de
+diffusion DDPM \cite{ddpm} est implémenté en TensorFlow, adapté de
+\cite{foster2023generative}. Cette architecture modulaire permet d'intégrer
+d'autres modèles génératifs ou métriques. La variabilité est quantifiée par la
+distance quadratique moyenne (MSD) des vecteurs de caractéristiques extraits par
+un ResNet-18 pré-entraîné sur ImageNet par rapport au centroïde du jeu de données.
+La similarité est évaluée via le score FID \cite{fid}. Nous avons entraîné des
+modèles DDPM (1 époque, images 28$\times$28) sur 9 jeux de données MedMNIST
+couvrant diverses modalités : tissus, pneumonie, rétine, sang, sein, organes
+(3 coupes) et dermatologie.
 
 \textbf{Résultats préliminaires.}
 Les valeurs de variabilité obtenues varient de 67,0 (TissueMNIST) à 135,1
