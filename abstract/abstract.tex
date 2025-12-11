@@ -1,0 +1,61 @@
+\documentclass{IABM2026}
+
+\IABMtitle{Variabilité des jeux de données et qualité de génération des modèles de diffusion : une étude préliminaire sur MedMNIST}
+\IABMauthors{T. Boulier\textsuperscript{1}}
+\IABMaffiliations{\textsuperscript{1}[Affiliation à compléter]}
+\IABMstatus{\begin{itemize}
+		\item[$\bullet$] Ce travail est en cours
+	\end{itemize}}
+
+\begin{document}
+
+\maketitle
+
+\hrule height 1pt
+
+\section*{Résumé}
+
+\textbf{Contexte et motivation.}
+Les modèles génératifs de type diffusion (DDPM) ont démontré des performances remarquables dans la synthèse d'images réalistes. Lors de l'adaptation d'un tutoriel sur ces modèles au domaine de l'imagerie médicale, nous avons observé empiriquement que les images générées après entraînement sur le jeu de données ChestMNIST semblaient plus réalistes après seulement quelques époques que celles générées sur des jeux de données non médicaux comme Oxford Flowers. Cette observation nous a conduits à formuler l'hypothèse suivante : la variabilité intrinsèque d'un jeu de données d'entraînement pourrait influencer la qualité des images générées par un modèle de diffusion.
+
+\textbf{Méthode.}
+Nous avons développé un pipeline expérimental permettant de mesurer (1) la variabilité d'un jeu de données et (2) la similarité entre images réelles et générées. La variabilité est quantifiée par la distance quadratique moyenne (MSD) des vecteurs de caractéristiques extraits par un ResNet-18 pré-entraîné sur ImageNet par rapport au centroïde du jeu de données. La similarité est évaluée via le score FID (Fréchet Inception Distance), une métrique standard pour évaluer la qualité des images générées. Nous avons entraîné des modèles DDPM (1 époque, images 28$\times$28) sur 9 jeux de données de la collection MedMNIST \cite{medmnistv2} couvrant diverses modalités d'imagerie médicale : tissus, pneumonie, rétine, sang, sein, organes (3 coupes) et dermatologie.
+
+\textbf{Résultats préliminaires.}
+Les valeurs de variabilité obtenues varient de 67,0 (TissueMNIST) à 135,1 (OrganAMNIST), tandis que les scores FID s'échelonnent de 138,9 (OrganCMNIST) à 574,0 (RetinaMNIST). Contrairement à notre hypothèse initiale, nous n'observons pas de corrélation claire entre variabilité et qualité de génération. Le cas de RetinaMNIST est particulièrement intéressant : malgré une variabilité modérée (85,0), ce jeu de données présente le pire score FID, suggérant que la complexité structurelle des images rétiniennes dépasse la simple mesure de variance des caractéristiques.
+
+\textbf{Discussion et perspectives.}
+Ces résultats préliminaires suggèrent que la relation entre diversité d'un jeu de données et facilité d'apprentissage génératif est plus complexe qu'anticipée. Plusieurs limites doivent être considérées : l'entraînement limité à une seule époque, la faible résolution des images (28$\times$28), et le choix de la métrique de variabilité. Les travaux futurs exploreront des entraînements plus longs, des résolutions supérieures, et des métriques alternatives capturant mieux la complexité structurelle des images médicales.
+
+\section*{Figures et Tableaux}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\linewidth]{figure_comparison.pdf}
+    \caption{Comparaison entre images réelles (gauche) et générées après 1 époque (droite) pour trois datasets représentatifs. OrganCMNIST (FID=139) produit des formes reconnaissables, BloodMNIST (FID=313) préserve la structure cellulaire, tandis que RetinaMNIST (FID=574) génère du bruit malgré une variabilité modérée.}
+\end{figure}
+
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{|l|c|c|c|}
+        \hline
+        \textbf{Dataset} & \textbf{Samples} & \textbf{Variabilité} & \textbf{FID} $\downarrow$ \\
+        \hline
+        TissueMNIST & 165\,466 & 67,0 & 142,5 \\
+        PneumoniaMNIST & 4\,708 & 71,9 & 164,9 \\
+        RetinaMNIST & 1\,080 & 85,0 & \textbf{574,0} \\
+        BreastMNIST & 546 & 93,3 & 296,3 \\
+        BloodMNIST & 11\,959 & 96,8 & 313,2 \\
+        OrganCMNIST & 12\,975 & 122,1 & \textbf{138,9} \\
+        OrganSMNIST & 13\,932 & 123,3 & 143,8 \\
+        DermaMNIST & 7\,007 & 123,7 & 175,8 \\
+        OrganAMNIST & 34\,561 & 135,1 & 191,2 \\
+        \hline
+    \end{tabular}
+    \caption{Variabilité (MSD ResNet-18) et score FID pour 9 datasets MedMNIST. Un FID plus bas indique une meilleure qualité de génération.}
+\end{table}
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}
