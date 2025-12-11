@@ -24,6 +24,8 @@
 \RequirePackage{titlesec}
 \RequirePackage{fancyhdr}
 \RequirePackage{xcolor}
+\RequirePackage{url}
+\RequirePackage{hyperref}
 
 % Mise en page
 \geometry{margin=2.5cm}
