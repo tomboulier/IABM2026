@@ -13,6 +13,9 @@ wheels/
 .idea/
 .vscode/*
 
+# Marimo session data
+notebooks/__marimo__/
+
 # generated files
 logs/
 checkpoint/

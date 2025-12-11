@@ -10,7 +10,7 @@ def _():
     return (mo,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     # MedMNIST Experiment Results Analysis
@@ -40,7 +40,7 @@ def _(pd):
     return (df,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ## Variability vs Similarity
@@ -56,10 +56,10 @@ def _(mo):
 
 @app.cell
 def _(df, plt):
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig_scatter, ax_scatter = plt.subplots(figsize=(10, 6))
 
     # Create scatter plot
-    scatter = ax.scatter(
+    ax_scatter.scatter(
         df["variability"],
         1/df["similarity"],
         s=100,
@@ -69,26 +69,26 @@ def _(df, plt):
     )
 
     # Add labels for each point
-    for idx, row in df.iterrows():
-        ax.annotate(
-            row["dataset"].replace("MNIST", ""),
-            (row["variability"], 1/row["similarity"]),
+    for _, row_scatter in df.iterrows():
+        ax_scatter.annotate(
+            row_scatter["dataset"].replace("MNIST", ""),
+            (row_scatter["variability"], 1/row_scatter["similarity"]),
             textcoords="offset points",
             xytext=(5, 5),
             fontsize=9,
         )
 
-    ax.set_xlabel("Variability (MSD to Centroid)", fontsize=12)
-    ax.set_ylabel("Similarity (1/FID)", fontsize=12)
-    ax.set_title("Dataset Variability vs Model Similarity", fontsize=14)
-    ax.grid(True, alpha=0.3)
+    ax_scatter.set_xlabel("Variability (MSD to Centroid)", fontsize=12)
+    ax_scatter.set_ylabel("Similarity (1/FID)", fontsize=12)
+    ax_scatter.set_title("Dataset Variability vs Model Similarity", fontsize=14)
+    ax_scatter.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    fig
+    fig_scatter
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ## Model Testing
@@ -123,7 +123,7 @@ def _(dataset_dropdown, df):
     selected_dataset = dataset_dropdown.value
     weights_path_row = df[df["dataset"] == selected_dataset]["model_weights"]
     weights_path = weights_path_row.iloc[0] if len(weights_path_row) > 0 else None
-    return selected_dataset, weights_path, weights_path_row
+    return selected_dataset, weights_path
 
 
 @app.cell
@@ -134,11 +134,11 @@ def _():
 
     # Get project root
     project_root = PathLib(__file__).parent.parent
-    return PathLib, np, project_root
+    return np, project_root
 
 
 @app.cell
-def _(np, project_root, selected_dataset):
+def _(np, selected_dataset):
     # Load dataset
     from src.infrastructure.loaders import MedMNISTDatasetLoader
 
@@ -147,43 +147,50 @@ def _(np, project_root, selected_dataset):
 
     # Get random sample indices
     sample_indices = np.random.choice(len(dataset), size=min(10, len(dataset)), replace=False)
-    return MedMNISTDatasetLoader, dataset, loader, sample_indices
+    return dataset, sample_indices
 
 
 @app.cell
-def _(dataset, num_images_slider, np, plt, sample_indices):
+def _(dataset, np, num_images_slider, plt, sample_indices):
     # Display random real images from dataset
-    n_images = num_images_slider.value
-    indices_to_show = sample_indices[:n_images]
+    n_real = num_images_slider.value
+    indices_to_show = sample_indices[:n_real]
 
-    fig_real, axes_real = plt.subplots(1, n_images, figsize=(n_images * 2, 2))
-    if n_images == 1:
+    # ImageNet normalization stats used in dataset loading
+    imagenet_mean = np.array([0.485, 0.456, 0.406])
+    imagenet_std = np.array([0.229, 0.224, 0.225])
+
+    fig_real, axes_real = plt.subplots(1, n_real, figsize=(n_real * 2, 2))
+    if n_real == 1:
         axes_real = [axes_real]
 
-    for i, idx in enumerate(indices_to_show):
-        img = dataset[idx]
-        if isinstance(img, tuple):
-            img = img[0]
+    for k, sample_idx in enumerate(indices_to_show):
+        real_img = dataset[sample_idx]
+        if isinstance(real_img, tuple):
+            real_img = real_img[0]
         # Convert to numpy if needed
-        if hasattr(img, "numpy"):
-            img = img.numpy()
-        img = np.array(img)
+        if hasattr(real_img, "numpy"):
+            real_img = real_img.numpy()
+        real_img = np.array(real_img)
         # Handle channel ordering (C, H, W) -> (H, W, C)
-        if img.ndim == 3 and img.shape[0] in [1, 3]:
-            img = np.transpose(img, (1, 2, 0))
+        if real_img.ndim == 3 and real_img.shape[0] in [1, 3]:
+            real_img = np.transpose(real_img, (1, 2, 0))
+        # Denormalize from ImageNet stats
+        real_img = real_img * imagenet_std + imagenet_mean
+        real_img = np.clip(real_img, 0, 1)
         # Handle grayscale
-        if img.ndim == 3 and img.shape[-1] == 1:
-            img = img.squeeze(-1)
-            axes_real[i].imshow(img, cmap="gray")
+        if real_img.ndim == 3 and real_img.shape[-1] == 1:
+            real_img = real_img.squeeze(-1)
+            axes_real[k].imshow(real_img, cmap="gray")
         else:
-            axes_real[i].imshow(img)
-        axes_real[i].axis("off")
-        axes_real[i].set_title(f"Real #{idx}")
+            axes_real[k].imshow(real_img)
+        axes_real[k].axis("off")
+        axes_real[k].set_title(f"Real #{sample_idx}")
 
     fig_real.suptitle("Real Images from Dataset", fontsize=12)
     plt.tight_layout()
     fig_real
-    return axes_real, fig_real, i, idx, img, indices_to_show, n_images
+    return
 
 
 @app.cell
@@ -201,7 +208,7 @@ def _(num_images_slider, project_root, weights_path):
     # Generate images
     n_gen = num_images_slider.value
     generated_images = model.generate_images(n=n_gen)
-    return TensorFlowDiffusionModel, full_weights_path, generated_images, model, n_gen
+    return generated_images, n_gen
 
 
 @app.cell
@@ -211,19 +218,19 @@ def _(generated_images, n_gen, np, plt):
     if n_gen == 1:
         axes_gen = [axes_gen]
 
-    for j, gen_img in enumerate(generated_images[:n_gen]):
+    for m, gen_image in enumerate(generated_images[:n_gen]):
         # Handle grayscale
-        if gen_img.shape[-1] == 1:
-            axes_gen[j].imshow(gen_img.squeeze(-1), cmap="gray")
+        if gen_image.shape[-1] == 1:
+            axes_gen[m].imshow(gen_image.squeeze(-1), cmap="gray")
         else:
-            axes_gen[j].imshow(np.clip(gen_img, 0, 1))
-        axes_gen[j].axis("off")
-        axes_gen[j].set_title(f"Gen #{j+1}")
+            axes_gen[m].imshow(np.clip(gen_image, 0, 1))
+        axes_gen[m].axis("off")
+        axes_gen[m].set_title(f"Gen #{m+1}")
 
     fig_gen.suptitle("Generated Images from Model", fontsize=12)
     plt.tight_layout()
     fig_gen
-    return axes_gen, fig_gen, gen_img, j
+    return
 
 
 if __name__ == "__main__":
