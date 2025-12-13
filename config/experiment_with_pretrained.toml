@@ -1,0 +1,43 @@
+# Experiment configuration with pre-trained models
+# Usage: python main.py -c config/experiment_with_pretrained.toml
+
+[experiment]
+# Datasets to process (image_size=28)
+datasets = [
+    "BloodMNIST",
+    "BreastMNIST",
+    "DermaMNIST",
+    "OrganAMNIST",
+    "OrganCMNIST",
+    "OrganSMNIST",
+    "PneumoniaMNIST",
+    "RetinaMNIST",
+    "TissueMNIST",
+]
+# Note: ChestMNIST and OCTMNIST were trained with image_size=64
+# They require a separate experiment config with image_size=64
+
+# Image size must match the trained models
+image_size = 28
+
+# Number of images to generate for FID computation
+num_generated_images = 100
+
+# Output file for results
+results_output = "results/experiment_results.csv"
+
+# Pre-trained model weights (dataset name -> weights path)
+[experiment.weights]
+BloodMNIST = "models/blood_epoch-1_all-images_image-size-28_batch-8.weights.h5"
+BreastMNIST = "models/breast_epoch-1_all-images_image-size-28_batch-8.weights.h5"
+DermaMNIST = "models/derma_epoch-1_all-images_image-size-28_batch-8.weights.h5"
+OrganAMNIST = "models/organa_epoch-1_all-images_image-size-28_batch-8.weights.h5"
+OrganCMNIST = "models/organc_epoch-1_all-images_image-size-28_batch-8.weights.h5"
+OrganSMNIST = "models/organs_epoch-1_all-images_image-size-28_batch-8.weights.h5"
+PneumoniaMNIST = "models/pneumonia_epoch-1_all-images_image-size-28_batch-8.weights.h5"
+RetinaMNIST = "models/retina_epoch-1_all-images_image-size-28_batch-8.weights.h5"
+TissueMNIST = "models/tissue_epoch-1_all-images_image-size-28_batch-8.weights.h5"
+
+# Models trained with image_size=64 (incompatible with this config):
+# ChestMNIST = "models/chest_epoch-1_all-images_image-size-64_batch-8.weights.h5"
+# OCTMNIST = "models/OCT_epoch-1_all-images_image-size-64_batch-8.weights.h5"

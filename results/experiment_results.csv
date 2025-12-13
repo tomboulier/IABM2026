@@ -1,0 +1,10 @@
+dataset,model_weights,variability,similarity,num_samples,num_generated
+BloodMNIST,models/blood_epoch-1_all-images_image-size-28_batch-8.weights.h5,96.829742,313.230616,11959,100
+BreastMNIST,models/breast_epoch-1_all-images_image-size-28_batch-8.weights.h5,93.252808,296.329880,546,100
+DermaMNIST,models/derma_epoch-1_all-images_image-size-28_batch-8.weights.h5,123.667755,175.797859,7007,100
+OrganAMNIST,models/organa_epoch-1_all-images_image-size-28_batch-8.weights.h5,135.075363,191.241691,34561,100
+OrganCMNIST,models/organc_epoch-1_all-images_image-size-28_batch-8.weights.h5,122.134583,138.878635,12975,100
+OrganSMNIST,models/organs_epoch-1_all-images_image-size-28_batch-8.weights.h5,123.285439,143.799505,13932,100
+PneumoniaMNIST,models/pneumonia_epoch-1_all-images_image-size-28_batch-8.weights.h5,71.859741,164.918281,4708,100
+RetinaMNIST,models/retina_epoch-1_all-images_image-size-28_batch-8.weights.h5,84.982437,573.980403,1080,100
+TissueMNIST,models/tissue_epoch-1_all-images_image-size-28_batch-8.weights.h5,66.984505,142.514055,165466,100
